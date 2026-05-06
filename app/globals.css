@@ -28,14 +28,14 @@
 
   .btn-primary {
     @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-sm font-bold text-white;
-    box-shadow: 0 10px 20px rgba(14, 165, 233, 0.12);
+    box-shadow: 0 10px 20px rgba(185, 150, 12, 0.18);
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .btn-primary:hover {
     @apply bg-brand-700;
     transform: translateY(-2px);
-    box-shadow: 0 12px 20px -3px rgba(14, 165, 233, 0.25),
-      0 4px 6px -2px rgba(14, 165, 233, 0.1);
+    box-shadow: 0 12px 20px -3px rgba(185, 150, 12, 0.32),
+      0 4px 6px -2px rgba(185, 150, 12, 0.15);
   }
 
   .btn-secondary {
@@ -87,7 +87,7 @@
   .field input:focus,
   .field select:focus {
     @apply border-brand-500;
-    box-shadow: 0 0 0 4px #d9efff;
+    box-shadow: 0 0 0 4px rgba(201, 162, 39, 0.2);
   }
 
   .metric {
@@ -178,14 +178,14 @@
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .answer:hover {
-    @apply border-sky-300 bg-brand-50;
+    @apply border-brand-500 bg-brand-50;
     transform: translateY(-2px);
-    box-shadow: 0 8px 15px -3px rgba(14, 165, 233, 0.1),
-      0 4px 6px -2px rgba(14, 165, 233, 0.05);
+    box-shadow: 0 8px 15px -3px rgba(185, 150, 12, 0.15),
+      0 4px 6px -2px rgba(185, 150, 12, 0.08);
   }
   .answer.selected {
     @apply border-brand-500 bg-brand-50;
-    box-shadow: 0 0 0 2px #d9efff;
+    box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.3);
     animation: selectPulse 0.3s ease-out;
   }
 

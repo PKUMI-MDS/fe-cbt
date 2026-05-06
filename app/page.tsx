@@ -32,15 +32,23 @@ export default function HomePage() {
           <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-16">
             <div className="flex flex-col justify-center">
               <span className="mb-5 w-fit rounded-full border border-brand-100 bg-white px-4 py-2 text-xs font-bold uppercase text-brand-700 shadow-sm">
-                Online Examination Platform
+                Platform Ujian Resmi Masjid Istiqlal
               </span>
-              <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                Prototype flow peserta CAT/CBT TOAFL dan TOEFL.
+              <h1 className="max-w-4xl text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+                Ujian CBT TOAFL<br />
+                <span className="mt-2 flex flex-wrap items-center gap-4 sm:flex-nowrap">
+                  Berbasis Sesi
+                  <span className="text-base font-bold tracking-normal text-slate-800 sm:text-lg">
+                    Sertifikasi Kemahiran<br />
+                    Bahasa Arab (TOAFL)<br />
+                    Resmi &amp; Terpercaya.
+                  </span>
+                </span>
               </h1>
-              <p className="mt-6 max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">
-                Simulasi end-to-end untuk presentasi client: registrasi, upload
-                bukti pembayaran, status approval, dashboard ujian, instruksi,
-                pengerjaan soal, submit final, dan riwayat skor.
+              <p className="mt-8 max-w-2xl border-l-4 border-brand-500 pl-4 text-base leading-8 text-slate-600 sm:text-lg">
+                Platform ujian online untuk TOAFL dan TOEFL dengan sistem berbasis
+                sesi, pembayaran per tes, randomisasi soal, auto-save, dan pengaturan
+                hasil per sesi.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/register" className="btn-primary">
@@ -54,16 +62,16 @@ export default function HomePage() {
               </div>
               <div className="mt-10 grid gap-3 sm:grid-cols-3">
                 <div className="metric">
-                  <p className="metric-value">90+</p>
-                  <p className="metric-label">Soal per paket</p>
+                  <p className="metric-value">120 Menit</p>
+                  <p className="metric-label">Durasi pengerjaan optimal.</p>
                 </div>
                 <div className="metric">
-                  <p className="metric-value">Auto</p>
-                  <p className="metric-label">Save jawaban</p>
+                  <p className="metric-value">Simpan Otomatis</p>
+                  <p className="metric-label">Jawaban aman, bebas khawatir hilang.</p>
                 </div>
                 <div className="metric">
-                  <p className="metric-value">RTL</p>
-                  <p className="metric-label">Support Arab</p>
+                  <p className="metric-value">Format Arab Sempurna</p>
+                  <p className="metric-label">Teks Right-to-Left yang jelas &amp; nyaman dibaca.</p>
                 </div>
               </div>
             </div>
