@@ -19,12 +19,6 @@ export const metadata = {
 export default function HomePage() {
   return (
     <>
-      <a
-        href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-white focus:px-4 focus:py-3 focus:text-sm focus:font-bold focus:text-slate-950 focus:shadow-soft"
-      >
-        Lewati ke konten utama
-      </a>
       <Header />
       <main id="main">
         {/* Hero */}
