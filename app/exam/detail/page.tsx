@@ -2,12 +2,13 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FlowNav from "@/components/FlowNav";
+import AuthGuard from "@/components/AuthGuard";
 
 export const metadata = { title: "CAT/CBT TOAFL - Detail Ujian" };
 
 export default function ExamDetailPage() {
   return (
-    <>
+    <AuthGuard>
       <Header />
       <main id="main">
         <section className="page-wrap max-w-6xl">
@@ -74,6 +75,6 @@ export default function ExamDetailPage() {
       </main>
       <FlowNav />
       <Footer />
-    </>
+    </AuthGuard>
   );
 }

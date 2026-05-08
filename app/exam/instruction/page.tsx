@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FlowNav from "@/components/FlowNav";
 import Toast from "@/components/Toast";
+import AuthGuard from "@/components/AuthGuard";
 
 export default function ExamInstructionPage() {
   const [agreed, setAgreed] = useState(false);
@@ -21,7 +22,7 @@ export default function ExamInstructionPage() {
   };
 
   return (
-    <>
+    <AuthGuard>
       <Header />
       <Toast message={toast} onHide={() => setToast("")} />
       <main id="main">
@@ -130,6 +131,6 @@ export default function ExamInstructionPage() {
           </div>
         </div>
       )}
-    </>
+    </AuthGuard>
   );
 }

@@ -1,7 +1,7 @@
-import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FlowNav from "@/components/FlowNav";
+import LoginForm from "@/components/LoginForm";
 
 export const metadata = { title: "CAT/CBT TOAFL - Login" };
 
@@ -22,48 +22,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form className="panel">
-            <h2 className="text-2xl font-extrabold text-slate-950">
-              Login Peserta
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Masukkan akun yang sudah disetujui admin.
-            </p>
-            <div className="mt-6 space-y-4">
-              <label className="field">
-                <span>Username / Email</span>
-                <input name="email" type="email" placeholder="nama@email.com" required />
-              </label>
-              <label className="field">
-                <span>Password</span>
-                <input name="password" type="password" placeholder="Masukkan password" required />
-              </label>
-            </div>
-            <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-              <label className="flex items-center gap-2 text-slate-500">
-                <input type="checkbox" className="rounded" />
-                Remember me
-              </label>
-              <Link
-                href="/forgot-password"
-                className="font-bold text-brand-700"
-              >
-                Lupa password?
-              </Link>
-            </div>
-            <button
-              type="submit"
-              className="mt-6 w-full justify-center btn-primary"
-            >
-              Login
-            </button>
-            <p className="mt-5 text-center text-sm text-slate-500">
-              Belum punya akun?{" "}
-              <Link href="/register" className="font-bold text-brand-700">
-                Daftar sekarang
-              </Link>
-            </p>
-          </form>
+          <LoginForm />
         </section>
       </main>
       <FlowNav />

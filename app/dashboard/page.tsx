@@ -2,13 +2,14 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FlowNav from "@/components/FlowNav";
+import AuthGuard from "@/components/AuthGuard";
 import { UserRound } from "lucide-react";
 
 export const metadata = { title: "CAT/CBT TOAFL - Dashboard" };
 
 export default function DashboardPage() {
   return (
-    <>
+    <AuthGuard>
       <Header />
       <main id="main">
         <section className="page-wrap">
@@ -119,9 +120,14 @@ export default function DashboardPage() {
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   Hubungi helpdesk jika akun belum aktif atau ujian tidak muncul.
                 </p>
-                <button className="mt-4 w-full justify-center btn-secondary">
-                  Contact Helpdesk
-                </button>
+                <div className="mt-4 grid gap-3">
+                  <Link href="/payment-proof" className="w-full justify-center btn-secondary">
+                    Upload Bukti Pembayaran
+                  </Link>
+                  <button className="w-full justify-center btn-secondary">
+                    Contact Helpdesk
+                  </button>
+                </div>
               </div>
             </aside>
           </div>
@@ -129,6 +135,6 @@ export default function DashboardPage() {
       </main>
       <FlowNav />
       <Footer />
-    </>
+    </AuthGuard>
   );
 }

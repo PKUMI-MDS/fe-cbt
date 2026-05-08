@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useAuthSession } from "@/lib/use-auth-session";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -13,6 +14,7 @@ const navLinks = [
 
 export default function Header() {
   const pathname = usePathname();
+  const { isAuthenticated, logout, status, user } = useAuthSession();
 
   return (
     <header className="sticky top-0 z-50 border-b border-amber-100/60 glass">
@@ -35,14 +37,29 @@ export default function Header() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
-          <Link href="/login" className="hidden rounded-xl px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50 sm:inline-flex">
-            Login
-          </Link>
-          <Link href="/register" className="inline-flex min-h-11 items-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-700" style={{ boxShadow: "0 8px 20px rgba(185, 150, 12, 0.3)" }}>
-            Daftar
-          </Link>
-        </div>
+        {isAuthenticated ? (
+          <div className="flex items-center gap-2">
+            <Link href="/dashboard" className="hidden rounded-xl px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50 sm:inline-flex">
+              {user?.name ?? "Dashboard"}
+            </Link>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="inline-flex min-h-11 items-center rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Link href="/login" className="hidden rounded-xl px-4 py-2 text-sm font-bold text-brand-700 hover:bg-brand-50 sm:inline-flex">
+              Login
+            </Link>
+            <Link href="/register" className="inline-flex min-h-11 items-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-bold text-white hover:bg-brand-700" style={{ boxShadow: "0 8px 20px rgba(185, 150, 12, 0.3)" }}>
+              {status === "loading" ? "..." : "Daftar"}
+            </Link>
+          </div>
+        )}
       </div>
     </header>
   );

@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import { Play } from "lucide-react";
 import Toast from "@/components/Toast";
+import AuthGuard from "@/components/AuthGuard";
 
 const TOTAL_QUESTIONS = 90;
 const INITIAL_ANSWERED = new Set([2, 4, 8, 12, 15, 20, 21, 30]);
@@ -62,7 +63,7 @@ export default function ExamPage() {
   ];
 
   return (
-    <>
+    <AuthGuard>
       <Toast message={toast} onHide={() => setToast("")} />
 
       <section className="min-h-screen bg-slate-100">
@@ -297,6 +298,6 @@ export default function ExamPage() {
           </div>
         </div>
       )}
-    </>
+    </AuthGuard>
   );
 }

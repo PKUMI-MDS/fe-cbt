@@ -17,7 +17,7 @@ export default function WaitingApprovalPage() {
             <h1>Menunggu Verifikasi Admin</h1>
             <p>
               Registrasi berhasil dikirim. Akun belum bisa mengakses ujian
-              sampai bukti pembayaran disetujui admin.
+              sampai proses verifikasi admin selesai.
             </p>
             <div className="status-grid">
               <div>
@@ -30,7 +30,7 @@ export default function WaitingApprovalPage() {
               </div>
               <div>
                 <small>Bukti Bayar</small>
-                <strong className="text-emerald-700">Uploaded</strong>
+                <strong className="text-slate-500">Menunggu Instruksi</strong>
               </div>
             </div>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">

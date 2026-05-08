@@ -51,3 +51,22 @@ export type RegisterPayload = {
 export type RegisterResponse = {
   user: Pick<AuthUser, "id" | "name" | "email" | "account_status">;
 };
+
+export type PaymentProof = {
+  id: number;
+  file_path?: string;
+  file_name: string;
+  mime_type?: string;
+  amount?: number | string | null;
+  payment_date?: string | null;
+  status: "pending_review" | "approved" | "rejected" | string;
+  rejection_reason?: string | null;
+  created_at?: string;
+  updated_at?: string;
+};
+
+export type PaymentProofPayload = {
+  file: File;
+  amount?: string;
+  payment_date?: string;
+};

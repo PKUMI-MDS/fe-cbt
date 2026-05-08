@@ -2,12 +2,13 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FlowNav from "@/components/FlowNav";
+import AuthGuard from "@/components/AuthGuard";
 
 export const metadata = { title: "CAT/CBT TOAFL - Score Detail" };
 
 export default function ScoreDetailPage() {
   return (
-    <>
+    <AuthGuard>
       <Header />
       <main id="main">
         <section className="page-wrap max-w-4xl">
@@ -57,6 +58,6 @@ export default function ScoreDetailPage() {
       </main>
       <FlowNav />
       <Footer />
-    </>
+    </AuthGuard>
   );
 }

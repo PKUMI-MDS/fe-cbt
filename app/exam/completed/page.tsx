@@ -2,13 +2,14 @@ import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import FlowNav from "@/components/FlowNav";
+import AuthGuard from "@/components/AuthGuard";
 import { CheckCircle2 } from "lucide-react";
 
 export const metadata = { title: "CAT/CBT TOAFL - Ujian Selesai" };
 
 export default function ExamCompletedPage() {
   return (
-    <>
+    <AuthGuard>
       <Header />
       <main id="main">
         <section className="center-wrap">
@@ -46,6 +47,6 @@ export default function ExamCompletedPage() {
       </main>
       <FlowNav />
       <Footer />
-    </>
+    </AuthGuard>
   );
 }
