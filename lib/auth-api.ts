@@ -1,11 +1,16 @@
 import { api } from "@/lib/api";
 import type {
   AuthUser,
+  ActiveAttemptResponse,
+  ExamResult,
+  ExamSessionRegistration,
   LoginResponse,
   PaymentProof,
   PaymentProofPayload,
+  PaginatedData,
   RegisterPayload,
   RegisterResponse,
+  TestApproval,
 } from "@/lib/types";
 
 export function loginParticipant(email: string, password: string) {
@@ -37,4 +42,28 @@ export function uploadPaymentProof(payload: PaymentProofPayload) {
   }
 
   return api.post<PaymentProof>("/payment-proofs", formData);
+}
+
+export function getPaymentProofs() {
+  return api.get<PaginatedData<PaymentProof>>("/payment-proofs");
+}
+
+export function getMyProfile() {
+  return api.get<AuthUser>("/my/profile");
+}
+
+export function getMyTestApprovals() {
+  return api.get<PaginatedData<TestApproval>>("/my/test-approvals");
+}
+
+export function getMyExamSessions() {
+  return api.get<PaginatedData<ExamSessionRegistration>>("/my/exam-sessions");
+}
+
+export function getActiveAttempt() {
+  return api.get<ActiveAttemptResponse>("/my/active-attempt");
+}
+
+export function getMyResults() {
+  return api.get<PaginatedData<ExamResult>>("/my/results");
 }

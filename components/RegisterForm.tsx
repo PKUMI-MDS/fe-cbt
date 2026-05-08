@@ -11,11 +11,13 @@ import type { RegisterPayload } from "@/lib/types";
 export default function RegisterForm() {
   const router = useRouter();
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
+    setFieldErrors({});
     setIsSubmitting(true);
 
     const formData = new FormData(event.currentTarget);
@@ -29,11 +31,40 @@ export default function RegisterForm() {
       password_confirmation: String(formData.get("password_confirmation") ?? ""),
     };
 
+    const nextFieldErrors: Record<string, string> = {};
+
+    if (payload.password.length < 8) {
+      nextFieldErrors.password = "Password minimal 8 karakter.";
+    }
+
+    if (payload.password !== payload.password_confirmation) {
+      nextFieldErrors.password_confirmation = "Konfirmasi password tidak sama.";
+    }
+
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await registerParticipant(payload);
       router.push("/waiting-approval");
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Registrasi gagal. Coba lagi.");
+      if (err instanceof ApiError) {
+        setError(err.message);
+        setFieldErrors({
+          name: err.errors?.name?.[0] ?? "",
+          email: err.errors?.email?.[0] ?? "",
+          phone: err.errors?.phone?.[0] ?? "",
+          institution: err.errors?.institution?.[0] ?? "",
+          identity_number: err.errors?.identity_number?.[0] ?? "",
+          password: err.errors?.password?.[0] ?? "",
+          password_confirmation: err.errors?.password_confirmation?.[0] ?? "",
+        });
+      } else {
+        setError("Registrasi gagal. Coba lagi.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -51,22 +82,27 @@ export default function RegisterForm() {
         <label className="field">
           <span>Nama Lengkap</span>
           <input name="name" placeholder="Nama sesuai identitas" required />
+          {fieldErrors.name ? <small className="text-rose-600">{fieldErrors.name}</small> : null}
         </label>
         <label className="field">
           <span>Email</span>
           <input name="email" type="email" placeholder="nama@email.com" required />
+          {fieldErrors.email ? <small className="text-rose-600">{fieldErrors.email}</small> : null}
         </label>
         <label className="field">
           <span>No. WhatsApp</span>
           <input name="phone" type="tel" placeholder="08xxxxxxxxxx" required />
+          {fieldErrors.phone ? <small className="text-rose-600">{fieldErrors.phone}</small> : null}
         </label>
         <label className="field">
           <span>Institusi</span>
           <input name="institution" placeholder="Nama instansi" />
+          {fieldErrors.institution ? <small className="text-rose-600">{fieldErrors.institution}</small> : null}
         </label>
         <label className="field">
           <span>Nomor Identitas</span>
           <input name="identity_number" placeholder="NIK/NIM/NIP" />
+          {fieldErrors.identity_number ? <small className="text-rose-600">{fieldErrors.identity_number}</small> : null}
         </label>
         <label className="field">
           <span>Jenis Ujian</span>
@@ -80,10 +116,12 @@ export default function RegisterForm() {
         <label className="field">
           <span>Password</span>
           <input name="password" type="password" placeholder="Minimal 8 karakter" required />
+          {fieldErrors.password ? <small className="text-rose-600">{fieldErrors.password}</small> : null}
         </label>
         <label className="field">
           <span>Konfirmasi Password</span>
           <input name="password_confirmation" type="password" placeholder="Ulangi password" required />
+          {fieldErrors.password_confirmation ? <small className="text-rose-600">{fieldErrors.password_confirmation}</small> : null}
         </label>
       </div>
 

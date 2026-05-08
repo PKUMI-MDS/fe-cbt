@@ -1,4 +1,4 @@
-import { getAuthToken } from "@/lib/auth";
+import { clearAuthToken, getAuthToken } from "@/lib/auth";
 import type { ApiResponse } from "@/lib/types";
 
 type ApiRequestOptions = Omit<RequestInit, "body" | "headers"> & {
@@ -10,12 +10,19 @@ type ApiRequestOptions = Omit<RequestInit, "body" | "headers"> & {
 export class ApiError extends Error {
   code: number;
   response?: ApiResponse<unknown>;
+  errors?: Record<string, string[]>;
 
-  constructor(message: string, code: number, response?: ApiResponse<unknown>) {
+  constructor(
+    message: string,
+    code: number,
+    response?: ApiResponse<unknown>,
+    errors?: Record<string, string[]>
+  ) {
     super(message);
     this.name = "ApiError";
     this.code = code;
     this.response = response;
+    this.errors = errors;
   }
 }
 
@@ -28,12 +35,16 @@ function apiUrl(path: string) {
   return `${apiBaseUrl()}/${path.replace(/^\/+/, "")}`;
 }
 
-async function parseJson<T>(response: Response): Promise<ApiResponse<T> | null> {
+type ApiPayload<T> = ApiResponse<T> & {
+  errors?: Record<string, string[] | string>;
+};
+
+async function parseJson<T>(response: Response): Promise<ApiPayload<T> | null> {
   const text = await response.text();
   if (!text) return null;
 
   try {
-    return JSON.parse(text) as ApiResponse<T>;
+    return JSON.parse(text) as ApiPayload<T>;
   } catch {
     return null;
   }
@@ -48,6 +59,32 @@ function buildBody(body: unknown, headers: Headers): BodyInit | undefined {
 
   headers.set("Content-Type", "application/json");
   return JSON.stringify(body);
+}
+
+function normalizeErrors(errors?: Record<string, string[] | string>) {
+  if (!errors) return undefined;
+
+  return Object.fromEntries(
+    Object.entries(errors).map(([field, value]) => [
+      field,
+      Array.isArray(value) ? value : [value],
+    ])
+  );
+}
+
+function handleAuthSideEffects(status: number, auth: boolean) {
+  if (typeof window === "undefined") return;
+
+  if (status === 401) {
+    clearAuthToken();
+    if (window.location.pathname !== "/login") {
+      window.location.assign("/login");
+    }
+  }
+
+  if (auth && status === 403 && window.location.pathname !== "/waiting-approval") {
+    window.location.assign("/waiting-approval");
+  }
 }
 
 export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}) {
@@ -73,10 +110,13 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   const payload = await parseJson<T>(response);
 
   if (!response.ok || payload?.status === "error") {
+    handleAuthSideEffects(response.status, auth);
+
     throw new ApiError(
       payload?.message ?? `Request gagal dengan status ${response.status}`,
       payload?.code ?? response.status,
-      payload as ApiResponse<unknown> | undefined
+      payload as ApiResponse<unknown> | undefined,
+      normalizeErrors(payload?.errors)
     );
   }
 
