@@ -143,3 +143,59 @@ export type ExamResult = {
   created_at?: string | null;
   exam_session?: ExamSession | null;
 };
+
+export type QuestionOption = {
+  key: string;
+  text?: string | null;
+  text_html?: string | null;
+  image_url?: string | null;
+};
+
+export type Question = {
+  number: number;
+  total: number;
+  stem_html?: string | null;
+  image_url?: string | null;
+  audio_url?: string | null;
+  audio_max_play?: number | null;
+  audio_play_count?: number | null;
+  options: QuestionOption[];
+  selected_key?: string | null;
+  is_doubtful?: boolean;
+  section?: string | null;
+};
+
+export type StartExamResponse = {
+  attempt: ActiveAttempt;
+  session: Pick<ExamSession, "id" | "title" | "code">;
+};
+
+export type HeartbeatResponse = {
+  remaining_seconds: number;
+  status: string;
+};
+
+export type AudioPlayResponse = {
+  allowed: boolean;
+  play_count: number;
+  max_play: number;
+};
+
+export type ViolationPayload = {
+  type: string;
+  detail?: string;
+};
+
+export type AttemptResult = {
+  attempt_id: number;
+  total_score?: number | string | null;
+  listening_score?: number | string | null;
+  structure_score?: number | string | null;
+  reading_score?: number | string | null;
+  correct_count?: number | null;
+  wrong_count?: number | null;
+  unanswered_count?: number | null;
+  show_result?: boolean;
+  submitted_at?: string | null;
+  exam_session?: ExamSession | null;
+};

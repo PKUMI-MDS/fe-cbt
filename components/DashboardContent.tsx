@@ -188,10 +188,10 @@ export default function DashboardContent() {
                         </div>
                       </div>
                       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                        <Link href="/exam/detail" className="btn-primary">
+                        <Link href={`/exam/detail?session_id=${session?.id ?? ""}`} className="btn-primary">
                           Detail
                         </Link>
-                        <Link href="/exam/instruction" className="btn-secondary">
+                        <Link href={`/exam/instruction?session_id=${session?.id ?? ""}`} className="btn-secondary">
                           Mulai / Instruksi
                         </Link>
                       </div>

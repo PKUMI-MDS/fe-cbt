@@ -93,7 +93,7 @@ export default function PaymentProofForm() {
 
   return (
     <div className="space-y-5">
-      <form className="panel" onSubmit={handleSubmit}>
+      <form id="payment-proof-form" className="panel" onSubmit={handleSubmit}>
         <h2 className="text-xl font-extrabold text-slate-950">Upload Bukti Pembayaran</h2>
         <p className="mt-2 text-sm leading-6 text-slate-500">
           Format JPG, PNG, atau PDF. Maksimal 5MB.
@@ -161,6 +161,18 @@ export default function PaymentProofForm() {
                   <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
                     {proof.rejection_reason}
                   </p>
+                ) : null}
+                {proof.status === "rejected" ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const formEl = document.getElementById("payment-proof-form");
+                      formEl?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-100 transition"
+                  >
+                    Upload Ulang
+                  </button>
                 ) : null}
               </div>
             ))}

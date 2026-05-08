@@ -25,6 +25,18 @@ export default function WaitingApprovalStatus() {
     setMessage(params.get("message") ?? "");
   }, []);
 
+  // Polling otomatis setiap 30 detik selama akun belum aktif
+  useEffect(() => {
+    if (user?.account_status === "active") return;
+    if (status === "unauthenticated") return;
+
+    const interval = setInterval(() => {
+      void refresh();
+    }, 30_000);
+
+    return () => clearInterval(interval);
+  }, [refresh, status, user?.account_status]);
+
   const isActive = user?.account_status === "active";
 
   return (

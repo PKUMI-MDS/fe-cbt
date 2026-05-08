@@ -1,17 +1,25 @@
 import { api } from "@/lib/api";
 import type {
-  AuthUser,
+  AttemptResult,
   ActiveAttemptResponse,
+  AudioPlayResponse,
+  AuthUser,
   ExamResult,
   ExamSessionRegistration,
+  HeartbeatResponse,
   LoginResponse,
   PaymentProof,
   PaymentProofPayload,
   PaginatedData,
+  Question,
   RegisterPayload,
   RegisterResponse,
+  StartExamResponse,
   TestApproval,
+  ViolationPayload,
 } from "@/lib/types";
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
 
 export function loginParticipant(email: string, password: string) {
   return api.post<LoginResponse>("/login", { email, password }, { auth: false });
@@ -28,6 +36,8 @@ export function logoutParticipant() {
 export function registerParticipant(payload: RegisterPayload) {
   return api.post<RegisterResponse>("/register", payload, { auth: false });
 }
+
+// ─── Payment Proof ───────────────────────────────────────────────────────────
 
 export function uploadPaymentProof(payload: PaymentProofPayload) {
   const formData = new FormData();
@@ -48,6 +58,8 @@ export function getPaymentProofs() {
   return api.get<PaginatedData<PaymentProof>>("/payment-proofs");
 }
 
+// ─── Participant Data ─────────────────────────────────────────────────────────
+
 export function getMyProfile() {
   return api.get<AuthUser>("/my/profile");
 }
@@ -67,3 +79,76 @@ export function getActiveAttempt() {
 export function getMyResults() {
   return api.get<PaginatedData<ExamResult>>("/my/results");
 }
+
+// ─── Exam Engine ──────────────────────────────────────────────────────────────
+
+/** Mulai ujian baru — membuat attempt baru di backend */
+export function startExam(sessionId: number) {
+  return api.post<StartExamResponse>(`/exam-sessions/${sessionId}/start`);
+}
+
+/** Resume attempt yang sedang aktif */
+export function resumeExam(attemptId: number) {
+  return api.get<StartExamResponse>(`/exam-attempts/${attemptId}/resume`);
+}
+
+/** Ambil soal berdasarkan nomor */
+export function getQuestion(attemptId: number, questionNumber: number) {
+  return api.get<Question>(`/exam-attempts/${attemptId}/questions/${questionNumber}`);
+}
+
+/** Simpan jawaban */
+export function saveAnswer(attemptId: number, questionNumber: number, selectedKey: string) {
+  return api.post<null>(`/exam-attempts/${attemptId}/answers`, {
+    question_number: questionNumber,
+    selected_key: selectedKey,
+  });
+}
+
+/** Toggle ragu-ragu */
+export function markDoubtful(attemptId: number, questionNumber: number, isDoubtful: boolean) {
+  return api.post<null>(`/exam-attempts/${attemptId}/mark-doubt`, {
+    question_number: questionNumber,
+    is_doubtful: isDoubtful,
+  });
+}
+
+/** Navigasi ke nomor soal tertentu */
+export function navigateQuestion(attemptId: number, targetNumber: number) {
+  return api.post<null>(`/exam-attempts/${attemptId}/navigate`, {
+    question_number: targetNumber,
+  });
+}
+
+/** Kirim heartbeat timer — kembalikan sisa waktu terkini */
+export function sendHeartbeat(attemptId: number) {
+  return api.post<HeartbeatResponse>(`/exam-attempts/${attemptId}/heartbeat`);
+}
+
+/** Log pelanggaran anti-cheat */
+export function logViolation(attemptId: number, payload: ViolationPayload) {
+  return api.post<null>(`/exam-attempts/${attemptId}/violations`, payload);
+}
+
+/** Log pemutaran audio dan cek apakah masih diizinkan */
+export function logAudioPlay(attemptId: number, questionNumber: number) {
+  return api.post<AudioPlayResponse>(`/exam-attempts/${attemptId}/audio-play`, {
+    question_number: questionNumber,
+  });
+}
+
+/** Submit ujian secara final */
+export function submitExam(attemptId: number) {
+  return api.post<AttemptResult>(`/exam-attempts/${attemptId}/submit`);
+}
+
+/** Ambil hasil satu attempt */
+export function getAttemptResult(attemptId: number) {
+  return api.get<AttemptResult>(`/exam-attempts/${attemptId}/result`);
+}
+
+/** Riwayat semua hasil ujian peserta */
+export function getResultHistory() {
+  return api.get<PaginatedData<ExamResult>>("/my/results");
+}
+
