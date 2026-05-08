@@ -18,31 +18,31 @@ export default function RegisterPage() {
             Isi data diri dan upload bukti pembayaran untuk diverifikasi admin.
           </p>
           <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
-            <form className="panel" action="/waiting-approval">
+            <form className="panel">
               <div className="grid gap-5 sm:grid-cols-2">
                 <label className="field">
                   <span>Nama Lengkap</span>
-                  <input defaultValue="Ahmad Fauzan" required />
+                  <input name="name" placeholder="Nama sesuai identitas" required />
                 </label>
                 <label className="field">
                   <span>Email</span>
-                  <input type="email" defaultValue="ahmad@email.com" required />
+                  <input name="email" type="email" placeholder="nama@email.com" required />
                 </label>
                 <label className="field">
                   <span>No. WhatsApp</span>
-                  <input type="tel" defaultValue="081234567890" required />
+                  <input name="phone" type="tel" placeholder="08xxxxxxxxxx" required />
                 </label>
                 <label className="field">
-                  <span>Username</span>
-                  <input defaultValue="ahmadfauzan" required />
+                  <span>Institusi</span>
+                  <input name="institution" placeholder="Nama instansi" />
                 </label>
                 <label className="field">
                   <span>Password</span>
-                  <input type="password" defaultValue="12345678" required />
+                  <input name="password" type="password" placeholder="Minimal 8 karakter" required />
                 </label>
                 <label className="field">
                   <span>Konfirmasi Password</span>
-                  <input type="password" defaultValue="12345678" required />
+                  <input name="password_confirmation" type="password" placeholder="Ulangi password" required />
                 </label>
                 <label className="field sm:col-span-2">
                   <span>Jenis Ujian</span>
@@ -106,7 +106,7 @@ export default function RegisterPage() {
           </div>
         </section>
       </main>
-      <FlowNav currentHref="/register" />
+      <FlowNav />
       <Footer />
     </>
   );

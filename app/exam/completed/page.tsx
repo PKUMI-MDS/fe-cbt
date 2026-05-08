@@ -44,7 +44,7 @@ export default function ExamCompletedPage() {
           </div>
         </section>
       </main>
-      <FlowNav currentHref="/exam/completed" />
+      <FlowNav />
       <Footer />
     </>
   );

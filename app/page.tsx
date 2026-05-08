@@ -148,7 +148,7 @@ export default function HomePage() {
           </div>
         </section>
       </main>
-      <FlowNav currentHref="/" />
+      <FlowNav />
       <Footer />
     </>
   );

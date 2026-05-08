@@ -82,7 +82,7 @@ export default function ExamInstructionPage() {
           </div>
         </section>
       </main>
-      <FlowNav currentHref="/exam/instruction" />
+      <FlowNav />
       <Footer />
 
       {/* Modal Konfirmasi */}

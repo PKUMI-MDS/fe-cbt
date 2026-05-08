@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
           </div>
         </section>
       </main>
-      <FlowNav currentHref="/forgot-password" />
+      <FlowNav />
       <Footer />
     </>
   );

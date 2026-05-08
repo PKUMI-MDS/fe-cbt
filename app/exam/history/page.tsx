@@ -62,7 +62,7 @@ export default function ExamHistoryPage() {
           </div>
         </section>
       </main>
-      <FlowNav currentHref="/exam/history" />
+      <FlowNav />
       <Footer />
     </>
   );

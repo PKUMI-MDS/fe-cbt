@@ -22,7 +22,7 @@ export default function ScoreDetailPage() {
                   TOEFL Tryout Result
                 </h1>
                 <p className="mt-2 text-slate-500">
-                  Ahmad Fauzan — 12 Mei 2026
+                  Nama Peserta — 12 Mei 2026
                 </p>
               </div>
               <div className="rounded-xl bg-brand-50 p-6 text-center">
@@ -55,7 +55,7 @@ export default function ScoreDetailPage() {
           </div>
         </section>
       </main>
-      <FlowNav currentHref="/exam/score" />
+      <FlowNav />
       <Footer />
     </>
   );

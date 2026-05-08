@@ -1,0 +1,95 @@
+import { getAuthToken } from "@/lib/auth";
+import type { ApiResponse } from "@/lib/types";
+
+type ApiRequestOptions = Omit<RequestInit, "body" | "headers"> & {
+  auth?: boolean;
+  body?: unknown;
+  headers?: HeadersInit;
+};
+
+export class ApiError extends Error {
+  code: number;
+  response?: ApiResponse<unknown>;
+
+  constructor(message: string, code: number, response?: ApiResponse<unknown>) {
+    super(message);
+    this.name = "ApiError";
+    this.code = code;
+    this.response = response;
+  }
+}
+
+function apiBaseUrl() {
+  return (process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000/api").replace(/\/+$/, "");
+}
+
+function apiUrl(path: string) {
+  if (/^https?:\/\//i.test(path)) return path;
+  return `${apiBaseUrl()}/${path.replace(/^\/+/, "")}`;
+}
+
+async function parseJson<T>(response: Response): Promise<ApiResponse<T> | null> {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text) as ApiResponse<T>;
+  } catch {
+    return null;
+  }
+}
+
+function buildBody(body: unknown, headers: Headers): BodyInit | undefined {
+  if (body === undefined || body === null) return undefined;
+
+  if (body instanceof FormData) {
+    return body;
+  }
+
+  headers.set("Content-Type", "application/json");
+  return JSON.stringify(body);
+}
+
+export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}) {
+  const { auth = true, body, headers, ...init } = options;
+  const requestHeaders = new Headers(headers);
+
+  requestHeaders.set("Accept", "application/json");
+
+  if (auth) {
+    const token = getAuthToken();
+    if (token) {
+      requestHeaders.set("Authorization", `Bearer ${token}`);
+    }
+  }
+
+  const response = await fetch(apiUrl(path), {
+    ...init,
+    body: buildBody(body, requestHeaders),
+    headers: requestHeaders,
+    cache: init.cache ?? "no-store",
+  });
+
+  const payload = await parseJson<T>(response);
+
+  if (!response.ok || payload?.status === "error") {
+    throw new ApiError(
+      payload?.message ?? `Request gagal dengan status ${response.status}`,
+      payload?.code ?? response.status,
+      payload as ApiResponse<unknown> | undefined
+    );
+  }
+
+  return payload?.data as T;
+}
+
+export const api = {
+  get: <T>(path: string, options?: ApiRequestOptions) =>
+    apiRequest<T>(path, { ...options, method: "GET" }),
+  post: <T>(path: string, body?: unknown, options?: ApiRequestOptions) =>
+    apiRequest<T>(path, { ...options, method: "POST", body }),
+  patch: <T>(path: string, body?: unknown, options?: ApiRequestOptions) =>
+    apiRequest<T>(path, { ...options, method: "PATCH", body }),
+  delete: <T>(path: string, options?: ApiRequestOptions) =>
+    apiRequest<T>(path, { ...options, method: "DELETE" }),
+};

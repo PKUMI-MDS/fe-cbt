@@ -72,7 +72,7 @@ export default function ExamDetailPage() {
           </div>
         </section>
       </main>
-      <FlowNav currentHref="/exam/detail" />
+      <FlowNav />
       <Footer />
     </>
   );

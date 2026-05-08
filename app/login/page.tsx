@@ -20,17 +20,9 @@ export default function LoginPage() {
               Akun yang belum di-approve diarahkan ke halaman status, bukan
               dashboard ujian.
             </p>
-            <div className="mt-8 rounded-2xl bg-white p-6 shadow-soft">
-              <p className="font-bold text-slate-950">Demo credential</p>
-              <p className="mt-2 text-sm text-slate-500">
-                Username: ahmadfauzan
-                <br />
-                Password: ********
-              </p>
-            </div>
           </div>
 
-          <form className="panel" action="/dashboard">
+          <form className="panel">
             <h2 className="text-2xl font-extrabold text-slate-950">
               Login Peserta
             </h2>
@@ -40,11 +32,11 @@ export default function LoginPage() {
             <div className="mt-6 space-y-4">
               <label className="field">
                 <span>Username / Email</span>
-                <input defaultValue="ahmadfauzan" required />
+                <input name="email" type="email" placeholder="nama@email.com" required />
               </label>
               <label className="field">
                 <span>Password</span>
-                <input type="password" defaultValue="12345678" required />
+                <input name="password" type="password" placeholder="Masukkan password" required />
               </label>
             </div>
             <div className="mt-4 flex items-center justify-between gap-3 text-sm">
@@ -74,7 +66,7 @@ export default function LoginPage() {
           </form>
         </section>
       </main>
-      <FlowNav currentHref="/login" />
+      <FlowNav />
       <Footer />
     </>
   );

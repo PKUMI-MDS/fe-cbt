@@ -37,14 +37,14 @@ export default function WaitingApprovalPage() {
               <Link href="/login" className="btn-secondary">
                 Kembali ke Login
               </Link>
-              <Link href="/dashboard" className="btn-primary">
-                Simulasikan Approved
+              <Link href="/login" className="btn-primary">
+                Cek Status Nanti
               </Link>
             </div>
           </div>
         </section>
       </main>
-      <FlowNav currentHref="/waiting-approval" />
+      <FlowNav />
       <Footer />
     </>
   );

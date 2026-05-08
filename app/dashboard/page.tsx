@@ -15,7 +15,7 @@ export default function DashboardPage() {
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
             <div>
               <p className="eyebrow">Dashboard Peserta</p>
-              <h1 className="page-title">Halo, Ahmad Fauzan</h1>
+              <h1 className="page-title">Halo, Peserta</h1>
               <p className="page-desc">
                 Akun kamu aktif. Silakan cek ujian yang tersedia.
               </p>
@@ -127,7 +127,7 @@ export default function DashboardPage() {
           </div>
         </section>
       </main>
-      <FlowNav currentHref="/dashboard" />
+      <FlowNav />
       <Footer />
     </>
   );
