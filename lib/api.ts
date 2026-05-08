@@ -72,7 +72,25 @@ function normalizeErrors(errors?: Record<string, string[] | string>) {
   );
 }
 
-function handleAuthSideEffects(status: number, auth: boolean) {
+// Kata kunci pesan error yang menandakan status akun pending/belum diapprove
+const ACCOUNT_STATUS_KEYWORDS = [
+  "pending",
+  "waiting",
+  "approval",
+  "not active",
+  "not approved",
+  "belum aktif",
+  "belum disetujui",
+  "account is not",
+];
+
+function isAccountStatusError(message?: string): boolean {
+  if (!message) return false;
+  const lower = message.toLowerCase();
+  return ACCOUNT_STATUS_KEYWORDS.some((kw) => lower.includes(kw));
+}
+
+function handleAuthSideEffects(status: number, auth: boolean, message?: string) {
   if (typeof window === "undefined") return;
 
   if (status === 401) {
@@ -82,7 +100,14 @@ function handleAuthSideEffects(status: number, auth: boolean) {
     }
   }
 
-  if (auth && status === 403 && window.location.pathname !== "/waiting-approval") {
+  // Hanya redirect 403 ke waiting-approval jika terkait status akun,
+  // bukan 403 dari exam engine (session closed, not assigned, dll)
+  if (
+    auth &&
+    status === 403 &&
+    isAccountStatusError(message) &&
+    window.location.pathname !== "/waiting-approval"
+  ) {
     window.location.assign("/waiting-approval");
   }
 }
@@ -110,7 +135,7 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
   const payload = await parseJson<T>(response);
 
   if (!response.ok || payload?.status === "error") {
-    handleAuthSideEffects(response.status, auth);
+    handleAuthSideEffects(response.status, auth, payload?.message);
 
     throw new ApiError(
       payload?.message ?? `Request gagal dengan status ${response.status}`,

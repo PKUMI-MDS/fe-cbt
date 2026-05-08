@@ -1,96 +1,331 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import Link from "next/link";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Play } from "lucide-react";
 import Toast from "@/components/Toast";
 import AuthGuard from "@/components/AuthGuard";
+import { ApiError } from "@/lib/api";
+import {
+  getActiveAttempt,
+  getQuestion,
+  logAudioPlay,
+  markDoubtful,
+  navigateQuestion,
+  saveAnswer,
+  sendHeartbeat,
+  submitExam,
+} from "@/lib/auth-api";
+import type { AttemptResult, Question } from "@/lib/types";
 
-const TOTAL_QUESTIONS = 90;
-const INITIAL_ANSWERED = new Set([2, 4, 8, 12, 15, 20, 21, 30]);
-const INITIAL_DOUBTFUL = new Set([5, 12, 44]);
+const HEARTBEAT_INTERVAL_MS = 30_000;
+
+function formatTime(seconds: number) {
+  if (seconds <= 0) return "00:00:00";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  return [h, m, s].map((v) => String(v).padStart(2, "0")).join(":");
+}
 
 export default function ExamPage() {
-  const [currentQ, setCurrentQ] = useState(1);
-  const [answered, setAnswered] = useState<Set<number>>(new Set(INITIAL_ANSWERED));
-  const [doubtful, setDoubtful] = useState<Set<number>>(new Set(INITIAL_DOUBTFUL));
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
-  const [saveState, setSaveState] = useState("Saved");
-  const [audioLeft, setAudioLeft] = useState(2);
-  const [audioBarWidth, setAudioBarWidth] = useState("0%");
-  const [showModal, setShowModal] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const attemptIdParam = searchParams.get("attempt_id");
+
+  const [attemptId, setAttemptId] = useState<number | null>(null);
+  const [currentQ, setCurrentQ] = useState<Question | null>(null);
+  const [currentNumber, setCurrentNumber] = useState(1);
+  const [totalQuestions, setTotalQuestions] = useState(0);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
+  const [answeredMap, setAnsweredMap] = useState<Record<number, number | null>>({});
+  const [doubtfulSet, setDoubtfulSet] = useState<Set<number>>(new Set());
+  const [saveState, setSaveState] = useState<"Saved" | "Saving..." | "Failed">("Saved");
+  const [isLoading, setIsLoading] = useState(true);
   const [toast, setToast] = useState("");
+  const [showModal, setShowModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitResult, setSubmitResult] = useState<AttemptResult | null>(null);
+  const [error, setError] = useState("");
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Load attempt on mount
+  useEffect(() => {
+    async function initExam() {
+      try {
+        let id: number | null = attemptIdParam ? Number(attemptIdParam) : null;
+
+        if (!id) {
+          const active = await getActiveAttempt();
+          if (!active) {
+            setError("Tidak ada ujian aktif. Kembali ke dashboard.");
+            setIsLoading(false);
+            return;
+          }
+          id = active.attempt.id;
+          setRemainingSeconds(active.attempt.remaining_seconds ?? 0);
+          setTotalQuestions(active.attempt.total_questions ?? 0);
+          setCurrentNumber(active.attempt.current_question_number ?? 1);
+        } else {
+          // attempt_id dari URL: WAJIB fetch remaining_seconds dari backend
+          // agar timer tidak mulai dari 0 dan langsung auto-submit!
+          try {
+            const active = await getActiveAttempt();
+            if (active && active.attempt.id === id) {
+              setRemainingSeconds(active.attempt.remaining_seconds ?? 1800);
+              setTotalQuestions(active.attempt.total_questions ?? 0);
+              setCurrentNumber(active.attempt.current_question_number ?? 1);
+            } else {
+              // Fallback: heartbeat untuk dapat remaining_seconds
+              const hb = await sendHeartbeat(id);
+              setRemainingSeconds(hb.remaining_seconds > 0 ? hb.remaining_seconds : 1800);
+            }
+          } catch {
+            setRemainingSeconds(1800); // default 30 menit agar tidak auto-submit
+          }
+        }
+
+        setAttemptId(id);
+        const q = await getQuestion(id, currentNumber);
+        setCurrentQ(q);
+        if (q.total) setTotalQuestions(q.total);
+
+        // Restore answered from question's selected_option_id
+        if (q.selected_option_id) {
+          setAnsweredMap((prev) => ({ ...prev, [currentNumber]: q.selected_option_id! }));
+        }
+        if (q.is_doubtful) {
+          setDoubtfulSet((prev) => new Set(prev).add(currentNumber));
+        }
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Gagal memuat soal ujian.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    void initExam();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Timer countdown — guard: jangan mulai jika remainingSeconds belum di-fetch (masih 0)
+  useEffect(() => {
+    if (!attemptId || isLoading || remainingSeconds <= 0) return;
+    timerRef.current = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          void handleSubmitFinal(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timerRef.current!);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attemptId, isLoading, remainingSeconds > 0]);
+
+  // Heartbeat
+  useEffect(() => {
+    if (!attemptId || isLoading) return;
+    heartbeatRef.current = setInterval(async () => {
+      try {
+        const hb = await sendHeartbeat(attemptId);
+        setRemainingSeconds(hb.remaining_seconds);
+        if (hb.status === "submitted" || hb.status === "timeout") {
+          router.push("/exam/completed");
+        }
+      } catch {
+        // silent fail
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+    return () => clearInterval(heartbeatRef.current!);
+  }, [attemptId, isLoading, router]);
+
+  const loadQuestion = useCallback(async (id: number, number: number) => {
+    try {
+      const q = await getQuestion(id, number);
+      setCurrentQ(q);
+      setCurrentNumber(number);
+      if (q.selected_option_id) {
+        setAnsweredMap((prev) => ({ ...prev, [number]: q.selected_option_id! }));
+      }
+      if (q.is_doubtful) {
+        setDoubtfulSet((prev) => new Set(prev).add(number));
+      }
+    } catch (err) {
+      setToast(err instanceof ApiError ? err.message : "Gagal memuat soal.");
+    }
+  }, []);
 
   const goToQuestion = useCallback(
-    (q: number) => {
-      setCurrentQ(q);
-      setSelectedAnswer(null);
+    async (n: number) => {
+      if (!attemptId) return;
+      try {
+        await navigateQuestion(attemptId, n);
+      } catch {
+        // navigate API optional — load tetap jalan
+      }
+      await loadQuestion(attemptId, n);
     },
-    []
+    [attemptId, loadQuestion]
   );
 
-  const handleSelectAnswer = (idx: number) => {
-    setSelectedAnswer(idx);
-    setAnswered((prev) => new Set(prev).add(currentQ));
-    setSaveState("Saving...");
-    setTimeout(() => setSaveState("Saved"), 600);
-  };
+  const handleSelectAnswer = useCallback(
+    async (optionId: number) => {
+      if (!attemptId || !currentQ) return;
+      setSaveState("Saving...");
+      setAnsweredMap((prev) => ({ ...prev, [currentNumber]: optionId }));
+      try {
+        await saveAnswer(attemptId, currentQ.id, optionId);
+        setSaveState("Saved");
+      } catch (err) {
+        setSaveState("Failed");
+        setToast(err instanceof ApiError ? err.message : "Gagal menyimpan jawaban.");
+      }
+    },
+    [attemptId, currentQ, currentNumber]
+  );
 
-  const handlePlayAudio = () => {
-    if (audioLeft <= 0) {
-      setToast("Audio play limit reached");
-      return;
+  const handleDoubtful = useCallback(async () => {
+    if (!attemptId || !currentQ) return;
+    const newValue = !doubtfulSet.has(currentNumber);
+    setDoubtfulSet((prev) => {
+      const next = new Set(prev);
+      newValue ? next.add(currentNumber) : next.delete(currentNumber);
+      return next;
+    });
+    try {
+      await markDoubtful(attemptId, currentQ.id, newValue);
+      setToast(newValue ? "Soal ditandai ragu-ragu" : "Tanda ragu-ragu dihapus");
+    } catch {
+      // revert
+      setDoubtfulSet((prev) => {
+        const next = new Set(prev);
+        newValue ? next.delete(currentNumber) : next.add(currentNumber);
+        return next;
+      });
     }
-    const newLeft = audioLeft - 1;
-    setAudioLeft(newLeft);
-    setAudioBarWidth(newLeft === 1 ? "45%" : "100%");
-  };
+  }, [attemptId, currentQ, currentNumber, doubtfulSet]);
 
-  const handleDoubtful = () => {
-    setDoubtful((prev) => new Set(prev).add(currentQ));
-    setToast("Question marked as doubtful");
-  };
+  const handlePlayAudio = useCallback(async () => {
+    if (!attemptId || !currentQ) return;
+    try {
+      const result = await logAudioPlay(attemptId, currentQ.id);
+      if (!result.allowed) {
+        setToast(`Batas putar audio (${result.max_play}x) sudah tercapai`);
+        return;
+      }
+      // Update play count on current question
+      setCurrentQ((prev) =>
+        prev ? { ...prev, audio_play_count: result.play_count } : prev
+      );
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        void audioRef.current.play();
+      }
+    } catch {
+      setToast("Gagal memutar audio.");
+    }
+  }, [attemptId, currentQ]);
 
-  const answeredCount = answered.size;
-  const emptyCount = TOTAL_QUESTIONS - answeredCount;
-  const doubtfulCount = doubtful.size;
+  const handleSubmitFinal = useCallback(
+    async (autoSubmit = false) => {
+      if (!attemptId) return;
+      setIsSubmitting(true);
+      try {
+        const result = await submitExam(attemptId);
+        setSubmitResult(result);
+        clearInterval(timerRef.current!);
+        clearInterval(heartbeatRef.current!);
+        router.push(
+          `/exam/completed?attempt_id=${attemptId}&show_result=${result.show_result ?? false}`
+        );
+      } catch (err) {
+        if (!autoSubmit) {
+          setToast(err instanceof ApiError ? err.message : "Gagal submit ujian.");
+        }
+        setIsSubmitting(false);
+        setShowModal(false);
+      }
+    },
+    [attemptId, router]
+  );
 
-  const answers = [
-    "أ. في السوق",
-    "ب. في المكتبة",
-    "ج. في الفصل",
-    "د. في البيت",
-  ];
+  const answeredCount = Object.values(answeredMap).filter((v) => v !== null && v !== undefined).length;
+  const emptyCount = totalQuestions - answeredCount;
+  const doubtfulCount = doubtfulSet.size;
+  const selectedOptionId = answeredMap[currentNumber] ?? null;
+
+  // ─── Error/Loading states ──────────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <AuthGuard>
+        <section className="min-h-screen bg-slate-100 flex items-center justify-center">
+          <p className="text-sm font-semibold text-slate-500">Memuat soal ujian...</p>
+        </section>
+      </AuthGuard>
+    );
+  }
+
+  if (error) {
+    return (
+      <AuthGuard>
+        <section className="center-wrap">
+          <div className="panel max-w-lg text-center">
+            <p className="text-sm font-semibold text-rose-700">{error}</p>
+            <a href="/dashboard" className="btn-primary mt-4 inline-flex">
+              Kembali ke Dashboard
+            </a>
+          </div>
+        </section>
+      </AuthGuard>
+    );
+  }
 
   return (
     <AuthGuard>
       <Toast message={toast} onHide={() => setToast("")} />
 
       <section className="min-h-screen bg-slate-100">
-        {/* Sticky Header Ujian */}
+        {/* Sticky Header */}
         <div className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
             <div>
               <p className="text-xs font-bold uppercase text-slate-400">
-                TOAFL Online Test
+                {currentQ?.section_type ?? currentQ?.section ?? "Ujian"}
               </p>
               <h1 className="text-base font-extrabold text-slate-950">
-                Question <span>{currentQ}</span> of {TOTAL_QUESTIONS}
+                Soal <span>{currentNumber}</span> dari {totalQuestions}
               </h1>
             </div>
             <div className="flex items-center gap-3">
-              <span className="hidden rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 sm:inline-flex">
+              <span
+                className={`hidden rounded-full px-3 py-1 text-xs font-bold sm:inline-flex ${
+                  saveState === "Saved"
+                    ? "bg-emerald-50 text-emerald-700"
+                    : saveState === "Saving..."
+                    ? "bg-amber-50 text-amber-700"
+                    : "bg-rose-50 text-rose-700"
+                }`}
+              >
                 {saveState}
               </span>
-              <span className="rounded-xl bg-rose-50 px-4 py-2 font-mono text-sm font-extrabold text-rose-700">
-                01:18:42
+              <span
+                className={`rounded-xl px-4 py-2 font-mono text-sm font-extrabold ${
+                  remainingSeconds < 300 ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-700"
+                }`}
+              >
+                {formatTime(remainingSeconds)}
               </span>
               <button
                 type="button"
                 onClick={() => setShowModal(true)}
-                className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white"
+                className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 transition"
               >
-                Finish
+                Selesai
               </button>
             </div>
           </div>
@@ -101,90 +336,113 @@ export default function ExamPage() {
           <div className="space-y-5 animate-fade-in-up">
             <div className="panel">
               <div className="mb-5 flex flex-wrap items-center gap-2">
-                <span className="badge-brand">Reading / Arabic</span>
+                <span className="badge-brand">{currentQ?.section_type ?? "Soal"}</span>
                 <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-                  Auto-save active
+                  Auto-save aktif
                 </span>
               </div>
 
-              <div className="space-y-4">
-                <p className="arabic text-2xl font-semibold text-slate-950">
-                  اقرأ النص الآتي ثم اختر الإجابة الصحيحة من الخيارات المتاحة.
-                </p>
-                <p className="arabic rounded-xl bg-slate-50 p-5 text-xl text-slate-700">
-                  كانَ الطّالبُ يقرأُ كتابًا في المكتبةِ عندما سمعَ صوتَ
-                  الأذانِ من المسجدِ القريبِ.
-                </p>
-              </div>
+              {/* Stem */}
+              <div
+                className="prose max-w-none text-slate-950"
+                dangerouslySetInnerHTML={{ __html: currentQ?.stem_html ?? "<p>Memuat soal...</p>" }}
+              />
+
+              {/* Image */}
+              {currentQ?.image_url ? (
+                <img
+                  src={currentQ.image_url}
+                  alt="Gambar soal"
+                  className="mt-4 max-h-72 rounded-xl object-contain"
+                />
+              ) : null}
 
               {/* Audio Player */}
-              <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="mb-3 text-sm font-bold text-slate-700">
-                  Audio sample component
-                </p>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handlePlayAudio}
-                    className={`grid h-11 w-11 place-items-center rounded-full text-white ${
-                      audioLeft === 0 ? "bg-slate-300" : "bg-brand-600"
-                    }`}
-                    aria-label="Putar audio"
-                  >
-                    <Play className="h-4 w-4 fill-current" />
-                  </button>
-                  <div className="h-2 flex-1 rounded-full bg-slate-200">
-                    <div
-                      className="h-2 rounded-full bg-brand-600 transition-all"
-                      style={{ width: audioBarWidth }}
-                    />
+              {currentQ?.audio_url ? (
+                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="mb-3 text-sm font-bold text-slate-700">
+                    Audio soal ({currentQ.audio_play_count ?? 0}/{currentQ.audio_max_play ?? 1}x dimainkan)
+                  </p>
+                  <audio ref={audioRef} src={currentQ.audio_url} preload="none" />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handlePlayAudio()}
+                      className={`grid h-11 w-11 place-items-center rounded-full text-white ${
+                        (currentQ.audio_play_count ?? 0) >= (currentQ.audio_max_play ?? 1)
+                          ? "bg-slate-300"
+                          : "bg-brand-600 hover:bg-brand-700"
+                      }`}
+                      aria-label="Putar audio"
+                      disabled={(currentQ.audio_play_count ?? 0) >= (currentQ.audio_max_play ?? 1)}
+                    >
+                      <Play className="h-4 w-4 fill-current" />
+                    </button>
+                    <div className="h-2 flex-1 rounded-full bg-slate-200">
+                      <div
+                        className="h-2 rounded-full bg-brand-600 transition-all"
+                        style={{
+                          width: `${Math.min(
+                            ((currentQ.audio_play_count ?? 0) / (currentQ.audio_max_play ?? 1)) * 100,
+                            100
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs font-bold text-slate-500">
+                      {Math.max(0, (currentQ.audio_max_play ?? 1) - (currentQ.audio_play_count ?? 0))} sisa
+                    </span>
                   </div>
-                  <span className="text-xs font-bold text-slate-500">
-                    {audioLeft} plays left
-                  </span>
                 </div>
-              </div>
+              ) : null}
 
-              {/* Pilihan Jawaban */}
+              {/* Options */}
               <div className="mt-7 space-y-3">
-                {answers.map((ans, idx) => (
+                {(currentQ?.options ?? []).map((opt) => (
                   <button
-                    key={idx}
+                    key={opt.id}
                     type="button"
-                    onClick={() => handleSelectAnswer(idx)}
-                    className={`answer ${selectedAnswer === idx ? "selected" : ""}`}
+                    onClick={() => void handleSelectAnswer(opt.id)}
+                    className={`answer ${selectedOptionId === opt.id ? "selected" : ""}`}
                   >
-                    <span className="arabic block text-xl">{ans}</span>
+                    <span
+                      className={`block ${currentQ?.section_type?.includes("arabic") || currentQ?.section?.includes("arabic") ? "arabic text-xl" : ""}`}
+                      dangerouslySetInnerHTML={{ __html: opt.option_html ?? "" }}
+                    />
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Navigasi Soal */}
+            {/* Navigation Buttons */}
             <div className="flex flex-col justify-between gap-3 sm:flex-row">
               <button
                 type="button"
-                onClick={() => currentQ > 1 && goToQuestion(currentQ - 1)}
-                className="btn-secondary"
+                onClick={() => void (currentNumber > 1 && goToQuestion(currentNumber - 1))}
+                disabled={currentNumber <= 1}
+                className="btn-secondary disabled:opacity-40"
               >
-                Previous Question
+                Soal Sebelumnya
               </button>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
-                  onClick={handleDoubtful}
-                  className="rounded-xl border border-amber-200 bg-amber-50 px-6 py-3 text-sm font-bold text-amber-700"
+                  onClick={() => void handleDoubtful()}
+                  className={`rounded-xl border px-6 py-3 text-sm font-bold transition ${
+                    doubtfulSet.has(currentNumber)
+                      ? "border-amber-400 bg-amber-400 text-amber-950"
+                      : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  }`}
                 >
-                  Mark Doubtful
+                  {doubtfulSet.has(currentNumber) ? "✓ Ragu-ragu" : "Tandai Ragu-ragu"}
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    currentQ < TOTAL_QUESTIONS && goToQuestion(currentQ + 1)
-                  }
-                  className="btn-primary"
+                  onClick={() => void (currentNumber < totalQuestions && goToQuestion(currentNumber + 1))}
+                  disabled={currentNumber >= totalQuestions}
+                  className="btn-primary disabled:opacity-40"
                 >
-                  Next Question
+                  Soal Berikutnya
                 </button>
               </div>
             </div>
@@ -193,49 +451,33 @@ export default function ExamPage() {
           {/* Question Navigator */}
           <aside className="lg:sticky lg:top-24 lg:h-fit animate-fade-in-up delay-100">
             <div className="panel">
-              <h3 className="font-extrabold text-slate-950">
-                Question Navigator
-              </h3>
+              <h3 className="font-extrabold text-slate-950">Navigasi Soal</h3>
               <div className="mt-5 grid grid-cols-6 gap-2">
-                {Array.from({ length: TOTAL_QUESTIONS }, (_, i) => i + 1).map(
-                  (n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      aria-label={`Buka soal ${n}`}
-                      onClick={() => goToQuestion(n)}
-                      className={`h-10 rounded-xl text-xs font-extrabold transition focus:outline-none focus:ring-4 focus:ring-brand-100 ${
-                        n === currentQ
-                          ? "bg-brand-600 text-white"
-                          : doubtful.has(n)
-                          ? "bg-amber-400 text-amber-950"
-                          : answered.has(n)
-                          ? "bg-emerald-500 text-white"
-                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  )
-                )}
+                {Array.from({ length: totalQuestions }, (_, i) => i + 1).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    aria-label={`Buka soal ${n}`}
+                    onClick={() => void goToQuestion(n)}
+                    className={`h-10 rounded-xl text-xs font-extrabold transition focus:outline-none focus:ring-4 focus:ring-brand-100 ${
+                      n === currentNumber
+                        ? "bg-brand-600 text-white"
+                        : doubtfulSet.has(n)
+                        ? "bg-amber-400 text-amber-950"
+                        : answeredMap[n]
+                        ? "bg-emerald-500 text-white"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    }`}
+                  >
+                    {n}
+                  </button>
+                ))}
               </div>
               <div className="mt-5 grid grid-cols-2 gap-2 text-xs text-slate-500">
-                <p>
-                  <span className="mr-1 inline-block h-3 w-3 rounded bg-brand-600" />
-                  Current
-                </p>
-                <p>
-                  <span className="mr-1 inline-block h-3 w-3 rounded bg-emerald-500" />
-                  Answered
-                </p>
-                <p>
-                  <span className="mr-1 inline-block h-3 w-3 rounded bg-amber-400" />
-                  Doubtful
-                </p>
-                <p>
-                  <span className="mr-1 inline-block h-3 w-3 rounded bg-slate-200" />
-                  Empty
-                </p>
+                <p><span className="mr-1 inline-block h-3 w-3 rounded bg-brand-600" />Sekarang</p>
+                <p><span className="mr-1 inline-block h-3 w-3 rounded bg-emerald-500" />Dijawab</p>
+                <p><span className="mr-1 inline-block h-3 w-3 rounded bg-amber-400" />Ragu-ragu</p>
+                <p><span className="mr-1 inline-block h-3 w-3 rounded bg-slate-200" />Belum</p>
               </div>
             </div>
           </aside>
@@ -244,56 +486,45 @@ export default function ExamPage() {
 
       {/* Submit Modal */}
       {showModal && (
-        <div
-          className="modal"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="submitTitle"
-        >
+        <div className="modal" role="dialog" aria-modal="true" aria-labelledby="submitTitle">
           <div className="modal-panel">
-            <h2
-              id="submitTitle"
-              className="text-2xl font-extrabold text-slate-950"
-            >
-              Submit Final?
+            <h2 id="submitTitle" className="text-2xl font-extrabold text-slate-950">
+              Submit Ujian Final?
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
               Setelah submit, jawaban tidak bisa diubah lagi.
             </p>
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl bg-emerald-50 p-4">
-                <p className="text-xs font-bold text-emerald-700">Answered</p>
-                <p className="text-2xl font-extrabold text-emerald-700">
-                  {answeredCount}
-                </p>
+                <p className="text-xs font-bold text-emerald-700">Dijawab</p>
+                <p className="text-2xl font-extrabold text-emerald-700">{answeredCount}</p>
               </div>
               <div className="rounded-xl bg-rose-50 p-4">
-                <p className="text-xs font-bold text-rose-700">Empty</p>
-                <p className="text-2xl font-extrabold text-rose-700">
-                  {emptyCount}
-                </p>
+                <p className="text-xs font-bold text-rose-700">Belum</p>
+                <p className="text-2xl font-extrabold text-rose-700">{emptyCount}</p>
               </div>
               <div className="rounded-xl bg-amber-50 p-4">
-                <p className="text-xs font-bold text-amber-700">Doubtful</p>
-                <p className="text-2xl font-extrabold text-amber-700">
-                  {doubtfulCount}
-                </p>
+                <p className="text-xs font-bold text-amber-700">Ragu-ragu</p>
+                <p className="text-2xl font-extrabold text-amber-700">{doubtfulCount}</p>
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowModal(false)}
+                disabled={isSubmitting}
                 className="btn-secondary"
               >
-                Review Answers
+                Tinjau Ulang
               </button>
-              <Link
-                href="/exam/completed"
-                className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+              <button
+                type="button"
+                onClick={() => void handleSubmitFinal()}
+                disabled={isSubmitting}
+                className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
               >
-                Submit Final
-              </Link>
+                {isSubmitting ? "Menyimpan..." : "Submit Final"}
+              </button>
             </div>
           </div>
         </div>

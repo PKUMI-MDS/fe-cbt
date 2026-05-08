@@ -97,18 +97,22 @@ export function getQuestion(attemptId: number, questionNumber: number) {
   return api.get<Question>(`/exam-attempts/${attemptId}/questions/${questionNumber}`);
 }
 
-/** Simpan jawaban */
-export function saveAnswer(attemptId: number, questionNumber: number, selectedKey: string) {
+/** Simpan jawaban — question_id adalah exam_attempt_questions.id, selected_option_id adalah question_options.id */
+export function saveAnswer(
+  attemptId: number,
+  questionId: number,
+  selectedOptionId: number | null
+) {
   return api.post<null>(`/exam-attempts/${attemptId}/answers`, {
-    question_number: questionNumber,
-    selected_key: selectedKey,
+    question_id: questionId,
+    selected_option_id: selectedOptionId,
   });
 }
 
-/** Toggle ragu-ragu */
-export function markDoubtful(attemptId: number, questionNumber: number, isDoubtful: boolean) {
+/** Toggle ragu-ragu — question_id adalah exam_attempt_questions.id */
+export function markDoubtful(attemptId: number, questionId: number, isDoubtful: boolean) {
   return api.post<null>(`/exam-attempts/${attemptId}/mark-doubt`, {
-    question_number: questionNumber,
+    question_id: questionId,
     is_doubtful: isDoubtful,
   });
 }

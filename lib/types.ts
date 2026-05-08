@@ -145,13 +145,16 @@ export type ExamResult = {
 };
 
 export type QuestionOption = {
-  key: string;
-  text?: string | null;
-  text_html?: string | null;
+  /** ID dari tabel question_options — dipakai sebagai selected_option_id saat saveAnswer */
+  id: number;
+  option_html?: string | null;
   image_url?: string | null;
+  audio_url?: string | null;
 };
 
 export type Question = {
+  /** ID dari tabel exam_attempt_questions — dipakai sebagai question_id saat saveAnswer */
+  id: number;
   number: number;
   total: number;
   stem_html?: string | null;
@@ -160,10 +163,12 @@ export type Question = {
   audio_max_play?: number | null;
   audio_play_count?: number | null;
   options: QuestionOption[];
-  selected_key?: string | null;
+  /** ID option yang sudah dipilih sebelumnya (null jika belum dijawab) */
+  selected_option_id?: number | null;
   is_doubtful?: boolean;
   section?: string | null;
-};
+  section_type?: string | null;
+}
 
 export type StartExamResponse = {
   attempt: ActiveAttempt;
