@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { BookOpen } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AuthGuard from "@/components/AuthGuard";
@@ -58,7 +59,12 @@ export default function ExamHistoryPage() {
                       className={idx > 0 ? "border-t border-slate-100" : ""}
                     >
                       <td className="px-6 py-5 font-bold">
-                        {result.exam_session?.title ?? "Ujian"}
+                        <div className="flex items-center gap-3">
+                          <div className="rounded-lg bg-slate-100 p-2 text-slate-600">
+                            <BookOpen className="h-4 w-4" />
+                          </div>
+                          {result.exam_session?.title ?? "Ujian"}
+                        </div>
                       </td>
                       <td className="px-6 py-5">{formatDate(result.created_at)}</td>
                       <td className="px-6 py-5 font-bold text-emerald-700">

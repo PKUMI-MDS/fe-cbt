@@ -174,12 +174,18 @@ export default function DashboardContent() {
                         </div>
                       </div>
                       <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-                        <Link href={`/exam/detail?session_id=${session?.id ?? ""}`} className="btn-primary">
-                          Detail
+                        <Link href={`/exam/detail?session_id=${session?.id ?? ""}`} className="btn-secondary">
+                          Detail Sesi
                         </Link>
-                        <Link href={`/exam/instruction?session_id=${session?.id ?? ""}`} className="btn-secondary">
-                          Mulai / Instruksi
-                        </Link>
+                        {registration.registration_status === "completed" ? (
+                          <Link href="/exam/history" className="btn-primary">
+                            Lihat Hasil
+                          </Link>
+                        ) : (
+                          <Link href={`/exam/instruction?session_id=${session?.id ?? ""}`} className="btn-primary">
+                            {registration.registration_status === "in_progress" ? "Lanjutkan Ujian" : "Mulai Ujian"}
+                          </Link>
+                        )}
                       </div>
                     </div>
                   );

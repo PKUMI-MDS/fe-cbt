@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { Phone, Building2, CreditCard, ShieldCheck } from "lucide-react";
 import { getMyProfile } from "@/lib/auth-api";
 import ProfileSkeleton from "@/components/ProfileSkeleton";
 
@@ -55,23 +56,43 @@ export default function ProfileContent() {
         </div>
       </div>
       <div className="mt-8 grid gap-4 sm:grid-cols-2">
-        <div className="info-box">
-          <small>WhatsApp</small>
-          <strong>{profile?.profile?.phone ?? "-"}</strong>
+        <div className="info-box flex items-start gap-3">
+          <div className="rounded-lg bg-brand-50 p-2 text-brand-600">
+            <Phone className="h-5 w-5" />
+          </div>
+          <div>
+            <small className="block text-slate-500">WhatsApp</small>
+            <strong className="text-slate-900">{profile?.profile?.phone ?? "-"}</strong>
+          </div>
         </div>
-        <div className="info-box">
-          <small>Institusi</small>
-          <strong>{profile?.profile?.institution ?? "-"}</strong>
+        <div className="info-box flex items-start gap-3">
+          <div className="rounded-lg bg-brand-50 p-2 text-brand-600">
+            <Building2 className="h-5 w-5" />
+          </div>
+          <div>
+            <small className="block text-slate-500">Institusi</small>
+            <strong className="text-slate-900">{profile?.profile?.institution ?? "-"}</strong>
+          </div>
         </div>
-        <div className="info-box">
-          <small>Nomor Identitas</small>
-          <strong>{profile?.profile?.identity_number ?? "-"}</strong>
+        <div className="info-box flex items-start gap-3">
+          <div className="rounded-lg bg-brand-50 p-2 text-brand-600">
+            <CreditCard className="h-5 w-5" />
+          </div>
+          <div>
+            <small className="block text-slate-500">Nomor Identitas</small>
+            <strong className="text-slate-900">{profile?.profile?.identity_number ?? "-"}</strong>
+          </div>
         </div>
-        <div className="info-box">
-          <small>Status</small>
-          <strong className={profile?.account_status === "active" ? "text-emerald-700" : "text-amber-700"}>
-            {accountStatusLabel(profile?.account_status)}
-          </strong>
+        <div className="info-box flex items-start gap-3">
+          <div className="rounded-lg bg-brand-50 p-2 text-brand-600">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <small className="block text-slate-500">Status Akun</small>
+            <strong className={`block ${profile?.account_status === "active" ? "text-emerald-700" : "text-amber-700"}`}>
+              {accountStatusLabel(profile?.account_status)}
+            </strong>
+          </div>
         </div>
       </div>
     </div>
