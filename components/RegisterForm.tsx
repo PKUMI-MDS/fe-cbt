@@ -129,7 +129,7 @@ export default function RegisterForm() {
         <Paperclip className="mx-auto h-10 w-10 text-brand-600" />
         <h3 className="mt-4 font-bold text-slate-950">Bukti Pembayaran</h3>
         <p className="mt-1 text-sm text-slate-500">
-          Upload bukti pembayaran disiapkan terpisah karena endpoint backend saat ini membutuhkan sesi login.
+          Upload bukti transfer dapat dilakukan di menu Dashboard setelah Anda menyelesaikan registrasi dan masuk ke akun Anda.
         </p>
       </div>
 
