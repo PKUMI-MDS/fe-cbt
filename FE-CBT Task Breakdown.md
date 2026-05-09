@@ -115,11 +115,11 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 ### P2 - Polish
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Loading skeleton** | ❌ Belum | Dashboard, history, exam perlu skeleton |
-| 2 | **State management** | ❌ Belum | TanStack Query/SWR atau Context API |
-| 3 | **E2E tests** | ❌ Belum | Playwright |
-| 4 | **Responsive mobile exam** | ⚠️ Parsial | Perlu cek ulang |
-| 5 | **Accessibility** | ⚠️ Parsial | Focus state, aria, keyboard navigation |
+| 1 | **Loading skeleton** | ✅ Selesai | Dashboard, History, Exam menggunakan skeleton |
+| 2 | **State management** | ✅ Selesai | TanStack Query diimplementasi pada Profile, Dashboard, History |
+| 3 | **E2E tests** | ✅ Selesai | Playwright setup & basic login test |
+| 4 | **Responsive mobile exam** | ✅ Selesai | Grid responsif dan overflow sudah dicek |
+| 5 | **Accessibility** | ✅ Selesai | ARIA Roles dan focus ring pada opsi jawaban |
 
 ---
 
@@ -140,8 +140,9 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - Result visibility
 - Loading skeleton
 
-### P2 - Polish
-- Better UX for retake
-- Richer history and profile
-- E2E tests
-- State management layer
+### P2 - Polish ✅ DONE
+- ✅ Better UX for retake
+- ✅ Richer history and profile
+- ✅ E2E tests (Playwright setup)
+- ✅ State management layer (TanStack Query)
+- ✅ Loading skeleton

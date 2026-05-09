@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AuthGuard from "@/components/AuthGuard";
-import { ApiError } from "@/lib/api";
 import { getResultHistory } from "@/lib/auth-api";
-import type { ExamResult } from "@/lib/types";
+import HistorySkeleton from "@/components/HistorySkeleton";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -15,23 +14,12 @@ function formatDate(value?: string | null) {
 }
 
 export default function ExamHistoryPage() {
-  const [results, setResults] = useState<ExamResult[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["history"],
+    queryFn: getResultHistory,
+  });
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await getResultHistory();
-        setResults(res.data ?? []);
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : "Gagal memuat riwayat ujian.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    void load();
-  }, []);
+  const results = data?.data ?? [];
 
   return (
     <AuthGuard>
@@ -42,12 +30,10 @@ export default function ExamHistoryPage() {
           <p className="page-desc">Daftar ujian yang pernah kamu ikuti.</p>
 
           {isLoading ? (
-            <div className="mt-8 panel text-sm font-semibold text-slate-500">
-              Memuat riwayat...
-            </div>
+            <HistorySkeleton />
           ) : error ? (
             <div className="mt-8 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-              {error}
+              {error instanceof Error ? error.message : "Gagal memuat riwayat ujian."}
             </div>
           ) : results.length === 0 ? (
             <div className="mt-8 rounded-xl border border-dashed border-slate-200 p-8 text-center text-sm leading-6 text-slate-500">

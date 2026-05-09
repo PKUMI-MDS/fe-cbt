@@ -18,6 +18,7 @@ import {
   submitExam,
 } from "@/lib/auth-api";
 import type { AttemptResult, Question } from "@/lib/types";
+import ExamSkeleton from "@/components/ExamSkeleton";
 
 const HEARTBEAT_INTERVAL_MS = 30_000;
 
@@ -359,9 +360,7 @@ export default function ExamPage() {
   if (isLoading) {
     return (
       <AuthGuard>
-        <section className="min-h-screen bg-slate-100 flex items-center justify-center">
-          <p className="text-sm font-semibold text-slate-500">Memuat soal ujian...</p>
-        </section>
+        <ExamSkeleton />
       </AuthGuard>
     );
   }
@@ -521,13 +520,15 @@ export default function ExamPage() {
               ) : null}
 
               {/* Options */}
-              <div className="mt-7 space-y-3">
+              <div className="mt-7 space-y-3" role="radiogroup" aria-label="Pilihan Jawaban">
                 {(currentQ?.options ?? []).map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
+                    role="radio"
+                    aria-checked={selectedOptionId === opt.id}
                     onClick={() => void handleSelectAnswer(opt.id)}
-                    className={`answer ${selectedOptionId === opt.id ? "selected" : ""}`}
+                    className={`answer focus:outline-none focus:ring-4 focus:ring-brand-500 focus:border-brand-500 w-full text-left ${selectedOptionId === opt.id ? "selected" : ""}`}
                   >
                     <span
                       className={`block ${currentQ?.section_type?.includes("arabic") || currentQ?.section?.includes("arabic") ? "arabic text-xl" : ""}`}
