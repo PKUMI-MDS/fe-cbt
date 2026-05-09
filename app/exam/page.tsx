@@ -10,6 +10,7 @@ import {
   getActiveAttempt,
   getQuestion,
   logAudioPlay,
+  logViolation,
   markDoubtful,
   navigateQuestion,
   saveAnswer,
@@ -17,6 +18,7 @@ import {
   submitExam,
 } from "@/lib/auth-api";
 import type { AttemptResult, Question } from "@/lib/types";
+import ExamSkeleton from "@/components/ExamSkeleton";
 
 const HEARTBEAT_INTERVAL_MS = 30_000;
 
@@ -47,6 +49,12 @@ export default function ExamPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [, setSubmitResult] = useState<AttemptResult | null>(null);
   const [error, setError] = useState("");
+
+  // P1: Exam Reliability States
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [violationCount, setViolationCount] = useState(0);
+  const [showViolationModal, setShowViolationModal] = useState(false);
+  const MAX_VIOLATIONS = 3;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -143,6 +151,95 @@ export default function ExamPage() {
     }, HEARTBEAT_INTERVAL_MS);
     return () => clearInterval(heartbeatRef.current!);
   }, [attemptId, isLoading, router]);
+
+  const handleViolation = useCallback(
+    async (type: string, detail: string) => {
+      if (!attemptId) return;
+      try {
+        await logViolation(attemptId, { type, detail });
+        setViolationCount((prev) => {
+          const next = prev + 1;
+          if (next >= MAX_VIOLATIONS) {
+            setShowViolationModal(true);
+          }
+          return next;
+        });
+        setToast(`Peringatan: ${detail}. Jangan diulangi!`);
+      } catch {
+        // silent fail if unable to log
+      }
+    },
+    [attemptId]
+  );
+
+  // Anti-cheat & Route Guard
+  useEffect(() => {
+    if (!attemptId || isLoading || error) return;
+
+    // 1. Route guard (prevent refresh / leave)
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+
+    // 2. Fullscreen change
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        setIsFullScreen(false);
+        handleViolation("fullscreen_exit", "Peserta keluar dari mode fullscreen");
+      } else {
+        setIsFullScreen(true);
+      }
+    };
+
+    // 3. Tab switch (visibility change)
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleViolation("tab_switch", "Peserta berpindah tab atau meminimalkan browser");
+      }
+    };
+
+    // 4. Disable right click/copy
+    const preventAction = (e: Event) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    // Disable right click, copy, cut, paste, selectstart
+    document.addEventListener("contextmenu", preventAction);
+    document.addEventListener("copy", preventAction);
+    document.addEventListener("cut", preventAction);
+    document.addEventListener("paste", preventAction);
+    document.addEventListener("selectstart", preventAction);
+
+    // Initial check in case it's somehow already fullscreen
+    if (document.fullscreenElement) {
+      setIsFullScreen(true);
+    }
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("contextmenu", preventAction);
+      document.removeEventListener("copy", preventAction);
+      document.removeEventListener("cut", preventAction);
+      document.removeEventListener("paste", preventAction);
+      document.removeEventListener("selectstart", preventAction);
+    };
+  }, [attemptId, isLoading, error, handleViolation]);
+
+  const enterFullscreen = () => {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {
+        setToast("Gagal masuk fullscreen. Pastikan browser mendukung.");
+      });
+    }
+  };
 
   const loadQuestion = useCallback(async (id: number, number: number) => {
     try {
@@ -263,9 +360,7 @@ export default function ExamPage() {
   if (isLoading) {
     return (
       <AuthGuard>
-        <section className="min-h-screen bg-slate-100 flex items-center justify-center">
-          <p className="text-sm font-semibold text-slate-500">Memuat soal ujian...</p>
-        </section>
+        <ExamSkeleton />
       </AuthGuard>
     );
   }
@@ -281,6 +376,33 @@ export default function ExamPage() {
             </a>
           </div>
         </section>
+      </AuthGuard>
+    );
+  }
+
+  if (!isFullScreen) {
+    return (
+      <AuthGuard>
+        <Toast message={toast} onHide={() => setToast("")} />
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900 px-4 text-center">
+          <div className="max-w-md rounded-2xl bg-white p-8 shadow-2xl">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-50">
+              <span className="text-2xl">🖥️</span>
+            </div>
+            <h2 className="mb-4 text-2xl font-extrabold text-slate-900">Masuk Mode Fullscreen</h2>
+            <p className="mb-6 text-sm leading-relaxed text-slate-500">
+              Ujian ini mewajibkan mode layar penuh (fullscreen) untuk mencegah kecurangan. 
+              Segala aktivitas keluar dari fullscreen atau pindah tab akan dicatat sebagai pelanggaran.
+            </p>
+            <button
+              type="button"
+              onClick={enterFullscreen}
+              className="btn-primary w-full"
+            >
+              Mulai / Lanjutkan Ujian
+            </button>
+          </div>
+        </div>
       </AuthGuard>
     );
   }
@@ -398,13 +520,15 @@ export default function ExamPage() {
               ) : null}
 
               {/* Options */}
-              <div className="mt-7 space-y-3">
+              <div className="mt-7 space-y-3" role="radiogroup" aria-label="Pilihan Jawaban">
                 {(currentQ?.options ?? []).map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
+                    role="radio"
+                    aria-checked={selectedOptionId === opt.id}
                     onClick={() => void handleSelectAnswer(opt.id)}
-                    className={`answer ${selectedOptionId === opt.id ? "selected" : ""}`}
+                    className={`answer focus:outline-none focus:ring-4 focus:ring-brand-500 focus:border-brand-500 w-full text-left ${selectedOptionId === opt.id ? "selected" : ""}`}
                   >
                     <span
                       className={`block ${currentQ?.section_type?.includes("arabic") || currentQ?.section?.includes("arabic") ? "arabic text-xl" : ""}`}
@@ -484,6 +608,33 @@ export default function ExamPage() {
           </aside>
         </div>
       </section>
+
+      {/* Violation Modal */}
+      {showViolationModal && (
+        <div className="modal" role="dialog" aria-modal="true" aria-labelledby="violationTitle">
+          <div className="modal-panel max-w-sm text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-100">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <h2 id="violationTitle" className="text-2xl font-extrabold text-slate-950">
+              Peringatan Pelanggaran
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Anda telah melakukan pelanggaran lebih dari batas yang diizinkan (maksimal {MAX_VIOLATIONS} kali). 
+              Aktivitas ini telah dicatat. Harap kembali mengerjakan ujian dengan jujur.
+            </p>
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => setShowViolationModal(false)}
+                className="w-full rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+              >
+                Saya Mengerti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Submit Modal */}
       {showModal && (

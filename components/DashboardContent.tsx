@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { UserRound } from "lucide-react";
-import { ApiError } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import DashboardSkeleton from "@/components/DashboardSkeleton";
 import {
   getActiveAttempt,
   getMyExamSessions,
@@ -53,60 +54,45 @@ function statusText(status?: string | null) {
 }
 
 export default function DashboardContent() {
-  const [data, setData] = useState<DashboardState>({
-    activeAttempt: null,
-    approvals: [],
-    profile: null,
-    registrations: [],
-    results: [],
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: async () => {
+      const [profile, approvals, registrations, activeAttempt, results] = await Promise.all([
+        getMyProfile(),
+        getMyTestApprovals(),
+        getMyExamSessions(),
+        getActiveAttempt(),
+        getMyResults(),
+      ]);
+
+      return {
+        activeAttempt,
+        approvals: approvals.data ?? [],
+        profile,
+        registrations: registrations.data ?? [],
+        results: results.data ?? [],
+      };
+    },
   });
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadDashboard() {
-      try {
-        const [profile, approvals, registrations, activeAttempt, results] = await Promise.all([
-          getMyProfile(),
-          getMyTestApprovals(),
-          getMyExamSessions(),
-          getActiveAttempt(),
-          getMyResults(),
-        ]);
-
-        setData({
-          activeAttempt,
-          approvals: approvals.data ?? [],
-          profile,
-          registrations: registrations.data ?? [],
-          results: results.data ?? [],
-        });
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : "Gagal memuat dashboard.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    void loadDashboard();
-  }, []);
 
   const activeApprovals = useMemo(
-    () => data.approvals.filter((approval) => approval.status === "active"),
-    [data.approvals]
+    () => data?.approvals.filter((approval) => approval.status === "active") ?? [],
+    [data?.approvals]
   );
 
   if (isLoading) {
-    return <div className="mt-8 panel text-sm font-semibold text-slate-500">Memuat dashboard...</div>;
+    return <DashboardSkeleton />;
   }
 
   if (error) {
     return (
       <div className="mt-8 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-        {error}
+        {error instanceof Error ? error.message : "Gagal memuat dashboard."}
       </div>
     );
   }
+
+  if (!data) return null;
 
   return (
     <>

@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ApiError } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
 import { getMyProfile } from "@/lib/auth-api";
-import type { AuthUser } from "@/lib/types";
+import ProfileSkeleton from "@/components/ProfileSkeleton";
 
 function initials(name?: string) {
   return (name ?? "P")
@@ -27,32 +26,19 @@ function accountStatusLabel(status?: string) {
 }
 
 export default function ProfileContent() {
-  const [profile, setProfile] = useState<AuthUser | null>(null);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadProfile() {
-      try {
-        setProfile(await getMyProfile());
-      } catch (err) {
-        setError(err instanceof ApiError ? err.message : "Gagal memuat profil.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    void loadProfile();
-  }, []);
+  const { data: profile, isLoading, error } = useQuery({
+    queryKey: ["profile"],
+    queryFn: getMyProfile,
+  });
 
   if (isLoading) {
-    return <div className="mt-8 panel text-sm font-semibold text-slate-500">Memuat profil...</div>;
+    return <ProfileSkeleton />;
   }
 
   if (error) {
     return (
       <div className="mt-8 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-        {error}
+        {error instanceof Error ? error.message : "Gagal memuat profil."}
       </div>
     );
   }
