@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AuthGuard from "@/components/AuthGuard";
 import { CheckCircle2 } from "lucide-react";
-import { ApiError } from "@/lib/api";
+
 import { getAttemptResult } from "@/lib/auth-api";
 import type { AttemptResult } from "@/lib/types";
 
@@ -25,7 +25,7 @@ export default function ExamCompletedPage() {
       try {
         const data = await getAttemptResult(Number(attemptId));
         setResult(data);
-      } catch (err) {
+      } catch {
         // result mungkin belum publish — bukan error fatal
       } finally {
         setIsLoading(false);

@@ -45,7 +45,7 @@ export default function ExamPage() {
   const [toast, setToast] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<AttemptResult | null>(null);
+  const [, setSubmitResult] = useState<AttemptResult | null>(null);
   const [error, setError] = useState("");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -204,7 +204,7 @@ export default function ExamPage() {
       // revert
       setDoubtfulSet((prev) => {
         const next = new Set(prev);
-        newValue ? next.delete(currentNumber) : next.add(currentNumber);
+        if (newValue) next.delete(currentNumber); else next.add(currentNumber);
         return next;
       });
     }
@@ -350,6 +350,7 @@ export default function ExamPage() {
 
               {/* Image */}
               {currentQ?.image_url ? (
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={currentQ.image_url}
                   alt="Gambar soal"
