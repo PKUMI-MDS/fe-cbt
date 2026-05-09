@@ -84,13 +84,13 @@ const ACCOUNT_STATUS_KEYWORDS = [
   "account is not",
 ];
 
-function isAccountStatusError(message?: string): boolean {
+function isAccountStatusError(message?: string | null): boolean {
   if (!message) return false;
   const lower = message.toLowerCase();
   return ACCOUNT_STATUS_KEYWORDS.some((kw) => lower.includes(kw));
 }
 
-function handleAuthSideEffects(status: number, auth: boolean, message?: string) {
+function handleAuthSideEffects(status: number, auth: boolean, message?: string | null) {
   if (typeof window === "undefined") return;
 
   if (status === 401) {

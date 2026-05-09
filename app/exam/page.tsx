@@ -194,7 +194,7 @@ export default function ExamPage() {
     const newValue = !doubtfulSet.has(currentNumber);
     setDoubtfulSet((prev) => {
       const next = new Set(prev);
-      newValue ? next.add(currentNumber) : next.delete(currentNumber);
+      if (newValue) next.add(currentNumber); else next.delete(currentNumber);
       return next;
     });
     try {
@@ -350,7 +350,7 @@ export default function ExamPage() {
 
               {/* Image */}
               {currentQ?.image_url ? (
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={currentQ.image_url}
                   alt="Gambar soal"
