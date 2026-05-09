@@ -444,8 +444,9 @@ export default function ExamPage() {
               </span>
               <button
                 type="button"
+                aria-label="Selesai Ujian"
                 onClick={() => setShowModal(true)}
-                className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 transition"
+                className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 transition focus:outline-none focus:ring-4 focus:ring-slate-400"
               >
                 Selesai
               </button>
@@ -540,15 +541,36 @@ export default function ExamPage() {
             </div>
 
             {/* Navigation Buttons */}
-            <div className="flex flex-col justify-between gap-3 sm:flex-row">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
               <button
                 type="button"
                 onClick={() => void (currentNumber > 1 && goToQuestion(currentNumber - 1))}
                 disabled={currentNumber <= 1}
-                className="btn-secondary disabled:opacity-40"
+                className="btn-secondary hidden sm:inline-flex disabled:opacity-40"
               >
                 Soal Sebelumnya
               </button>
+
+              {/* Mobile Prev/Next Grid */}
+              <div className="grid grid-cols-2 gap-3 sm:hidden">
+                <button
+                  type="button"
+                  onClick={() => void (currentNumber > 1 && goToQuestion(currentNumber - 1))}
+                  disabled={currentNumber <= 1}
+                  className="btn-secondary disabled:opacity-40"
+                >
+                  Sebelumnya
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void (currentNumber < totalQuestions && goToQuestion(currentNumber + 1))}
+                  disabled={currentNumber >= totalQuestions}
+                  className="btn-primary disabled:opacity-40"
+                >
+                  Berikutnya
+                </button>
+              </div>
+
               <div className="flex flex-col gap-3 sm:flex-row">
                 <button
                   type="button"
@@ -565,7 +587,7 @@ export default function ExamPage() {
                   type="button"
                   onClick={() => void (currentNumber < totalQuestions && goToQuestion(currentNumber + 1))}
                   disabled={currentNumber >= totalQuestions}
-                  className="btn-primary disabled:opacity-40"
+                  className="btn-primary hidden sm:inline-flex disabled:opacity-40"
                 >
                   Soal Berikutnya
                 </button>
@@ -583,14 +605,15 @@ export default function ExamPage() {
                     key={n}
                     type="button"
                     aria-label={`Buka soal ${n}`}
+                    aria-current={n === currentNumber ? "step" : undefined}
                     onClick={() => void goToQuestion(n)}
-                    className={`h-10 rounded-xl text-xs font-extrabold transition focus:outline-none focus:ring-4 focus:ring-brand-100 ${
+                    className={`h-10 rounded-xl text-xs font-extrabold transition focus:outline-none focus:ring-4 focus:ring-brand-400 ${
                       n === currentNumber
-                        ? "bg-brand-600 text-white"
+                        ? "bg-brand-600 text-white shadow-md"
                         : doubtfulSet.has(n)
-                        ? "bg-amber-400 text-amber-950"
+                        ? "bg-amber-400 text-amber-950 shadow-sm"
                         : answeredMap[n]
-                        ? "bg-emerald-500 text-white"
+                        ? "bg-emerald-500 text-white shadow-sm"
                         : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                     }`}
                   >

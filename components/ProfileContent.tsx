@@ -46,7 +46,7 @@ export default function ProfileContent() {
   return (
     <div className="mt-8 panel">
       <div className="flex items-center gap-4">
-        <div className="grid h-16 w-16 place-items-center rounded-xl bg-brand-100 text-xl font-extrabold text-brand-700">
+        <div className="grid h-16 w-16 place-items-center rounded-xl bg-brand-100 text-xl font-extrabold text-brand-700" aria-hidden="true">
           {initials(profile?.name)}
         </div>
         <div>
