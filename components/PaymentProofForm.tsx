@@ -4,23 +4,63 @@ import { useEffect, useState } from "react";
 import { ApiError } from "@/lib/api";
 import { getPaymentProofs, uploadPaymentProof } from "@/lib/auth-api";
 import type { PaymentProof } from "@/lib/types";
+import {
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  FileText,
+  Upload,
+  XCircle,
+} from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
-  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(new Date(value));
+  return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(
+    new Date(value)
+  );
 }
 
-function statusLabel(status: string) {
-  const labels: Record<string, string> = {
-    pending_review: "Menunggu Review",
-    approved: "Disetujui",
-    rejected: "Ditolak",
-  };
+function formatCurrency(value?: number | string | null) {
+  if (value === null || value === undefined) return "-";
+  const num = typeof value === "string" ? Number(value) : value;
+  if (Number.isNaN(num)) return String(value);
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+  }).format(num);
+}
 
-  return labels[status] ?? status;
+function statusConfig(status: string) {
+  switch (status) {
+    case "approved":
+      return {
+        label: "Disetujui",
+        icon: CheckCircle,
+        badgeClass:
+          "inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700",
+        cardClass: "border-emerald-200 bg-emerald-50/30",
+      };
+    case "rejected":
+      return {
+        label: "Ditolak",
+        icon: XCircle,
+        badgeClass:
+          "inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-700",
+        cardClass: "border-rose-200 bg-rose-50/30",
+      };
+    default:
+      return {
+        label: "Menunggu Review",
+        icon: Clock,
+        badgeClass:
+          "inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700",
+        cardClass: "border-slate-200",
+      };
+  }
 }
 
 export default function PaymentProofForm() {
@@ -32,12 +72,15 @@ export default function PaymentProofForm() {
 
   async function loadHistory() {
     setIsLoadingHistory(true);
-
     try {
       const response = await getPaymentProofs();
       setProofs(response.data ?? []);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal memuat riwayat pembayaran.");
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Gagal memuat riwayat pembayaran."
+      );
     } finally {
       setIsLoadingHistory(false);
     }
@@ -85,27 +128,45 @@ export default function PaymentProofForm() {
       setSuccess("Bukti pembayaran berhasil dikirim dan menunggu review admin.");
       await loadHistory();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Upload bukti pembayaran gagal.");
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Upload bukti pembayaran gagal."
+      );
     } finally {
       setIsSubmitting(false);
     }
   }
 
+  const hasRejected = proofs.some((p) => p.status === "rejected");
+
   return (
     <div className="space-y-5">
+      {/* Upload Form */}
       <form id="payment-proof-form" className="panel" onSubmit={handleSubmit}>
-        <h2 className="text-xl font-extrabold text-slate-950">Upload Bukti Pembayaran</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-500">
-          Format JPG, PNG, atau PDF. Maksimal 5MB.
-        </p>
+        <div className="flex items-center gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-xl bg-brand-50">
+            <Upload className="h-5 w-5 text-brand-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-extrabold text-slate-950">
+              Upload Bukti Pembayaran
+            </h2>
+            <p className="text-sm text-slate-500">
+              Format JPG, PNG, atau PDF. Maksimal 5MB.
+            </p>
+          </div>
+        </div>
 
         {error ? (
-          <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+          <div className="mt-5 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             {error}
           </div>
         ) : null}
         {success ? (
-          <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          <div className="mt-5 flex items-start gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+            <CheckCircle className="mt-0.5 h-4 w-4 shrink-0" />
             {success}
           </div>
         ) : null}
@@ -113,11 +174,23 @@ export default function PaymentProofForm() {
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           <label className="field sm:col-span-2">
             <span>File Bukti</span>
-            <input name="file" type="file" accept=".jpg,.jpeg,.png,.pdf" required />
+            <input
+              name="file"
+              type="file"
+              accept=".jpg,.jpeg,.png,.pdf"
+              required
+              className="file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-brand-700 hover:file:bg-brand-100"
+            />
           </label>
           <label className="field">
-            <span>Nominal</span>
-            <input name="amount" inputMode="numeric" placeholder="Contoh: 250000" />
+            <span>Nominal (Rp)</span>
+            <input
+              name="amount"
+              type="number"
+              min={0}
+              inputMode="numeric"
+              placeholder="Contoh: 250000"
+            />
           </label>
           <label className="field">
             <span>Tanggal Bayar</span>
@@ -130,52 +203,117 @@ export default function PaymentProofForm() {
           disabled={isSubmitting}
           className="mt-6 w-full justify-center btn-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting ? "Mengupload..." : "Upload Bukti"}
+          {isSubmitting ? "Mengupload..." : "Upload Bukti Pembayaran"}
         </button>
       </form>
 
+      {/* Rejection Alert */}
+      {hasRejected ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
+            <div>
+              <p className="text-sm font-bold text-rose-800">
+                Bukti pembayaran Anda ditolak
+              </p>
+              <p className="mt-1 text-sm text-rose-700">
+                Silakan periksa alasan penolakan di bawah dan upload ulang bukti
+                yang lebih jelas. Hubungi admin jika membutuhkan bantuan.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* History */}
       <section className="panel">
-        <h2 className="text-lg font-extrabold text-slate-950">Riwayat Bukti Pembayaran</h2>
+        <h2 className="text-lg font-extrabold text-slate-950">
+          Riwayat Bukti Pembayaran
+        </h2>
         {isLoadingHistory ? (
-          <p className="mt-4 text-sm font-semibold text-slate-500">Memuat riwayat...</p>
-        ) : proofs.length === 0 ? (
-          <p className="mt-4 text-sm leading-6 text-slate-500">
-            Belum ada bukti pembayaran yang dikirim.
+          <p className="mt-4 text-sm font-semibold text-slate-500">
+            Memuat riwayat...
           </p>
+        ) : proofs.length === 0 ? (
+          <div className="mt-4 rounded-xl bg-slate-50 p-6 text-center">
+            <FileText className="mx-auto h-8 w-8 text-slate-300" />
+            <p className="mt-2 text-sm text-slate-500">
+              Belum ada bukti pembayaran yang dikirim.
+            </p>
+          </div>
         ) : (
           <div className="mt-4 space-y-3">
-            {proofs.map((proof) => (
-              <div key={proof.id} className="rounded-xl border border-slate-200 p-4">
-                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
-                  <div>
-                    <p className="font-bold text-slate-950">{proof.file_name}</p>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">
-                      Tanggal bayar: {formatDate(proof.payment_date)}
-                    </p>
+            {proofs.map((proof) => {
+              const cfg = statusConfig(proof.status);
+              const StatusIcon = cfg.icon;
+              return (
+                <div
+                  key={proof.id}
+                  className={`rounded-xl border p-4 transition ${cfg.cardClass}`}
+                >
+                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 shrink-0 text-slate-400" />
+                        <p className="truncate font-bold text-slate-950">
+                          {proof.file_name}
+                        </p>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                        <span>
+                          Nominal:{" "}
+                          <strong className="text-slate-700">
+                            {formatCurrency(proof.amount)}
+                          </strong>
+                        </span>
+                        <span>
+                          Tanggal:{" "}
+                          <strong className="text-slate-700">
+                            {formatDate(proof.payment_date)}
+                          </strong>
+                        </span>
+                        <span>
+                          Diupload:{" "}
+                          <strong className="text-slate-700">
+                            {formatDate(proof.created_at)}
+                          </strong>
+                        </span>
+                      </div>
+                    </div>
+                    <span className={cfg.badgeClass}>
+                      <StatusIcon className="h-3.5 w-3.5" />
+                      {cfg.label}
+                    </span>
                   </div>
-                  <span className={proof.status === "rejected" ? "inline-flex rounded-full bg-rose-100 px-3 py-1 text-xs font-bold text-rose-700" : proof.status === "approved" ? "badge-success" : "badge-brand"}>
-                    {statusLabel(proof.status)}
-                  </span>
+
+                  {proof.rejection_reason ? (
+                    <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2">
+                      <p className="text-xs font-bold text-rose-700">
+                        Alasan Penolakan:
+                      </p>
+                      <p className="text-sm text-rose-700">
+                        {proof.rejection_reason}
+                      </p>
+                    </div>
+                  ) : null}
+
+                  {proof.status === "rejected" ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const formEl =
+                          document.getElementById("payment-proof-form");
+                        formEl?.scrollIntoView({ behavior: "smooth" });
+                      }}
+                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-50 transition"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload Ulang
+                    </button>
+                  ) : null}
                 </div>
-                {proof.rejection_reason ? (
-                  <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
-                    {proof.rejection_reason}
-                  </p>
-                ) : null}
-                {proof.status === "rejected" ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const formEl = document.getElementById("payment-proof-form");
-                      formEl?.scrollIntoView({ behavior: "smooth" });
-                    }}
-                    className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-100 transition"
-                  >
-                    Upload Ulang
-                  </button>
-                ) : null}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

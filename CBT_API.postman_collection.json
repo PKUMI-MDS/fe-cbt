@@ -1,0 +1,2652 @@
+{
+  "info": {
+    "_postman_id": "d5e96870-7a9d-4a1e-a7af-29962b89b8b7",
+    "name": "CBT API - Local Testing",
+    "description": "Collection untuk mengetes API backend CBT Laravel. Import bersama environment CBT Local, lalu jalankan folder sesuai urutan. Request Optional/Negative sebaiknya dijalankan terpisah karena dapat mengubah data happy path.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const now = new Date();",
+          "function pad(n) { return String(n).padStart(2, '0'); }",
+          "const yyyy = now.getFullYear();",
+          "const mm = pad(now.getMonth() + 1);",
+          "const dd = pad(now.getDate());",
+          "const today = `${yyyy}-${mm}-${dd}`;",
+          "if (!pm.environment.get('run_id')) {",
+          "  const runId = String(Date.now());",
+          "  pm.environment.set('run_id', runId);",
+          "  pm.environment.set('user_email', `user.${runId}@test.local`);",
+          "}",
+          "pm.environment.set('today', today);",
+          "pm.environment.set('start_time', `${today} 00:00:00`);",
+          "pm.environment.set('end_time', `${today} 23:59:59`);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('HTTP status is not 500', function () {",
+          "  pm.expect(pm.response.code).to.be.below(500);",
+          "});",
+          "const contentType = pm.response.headers.get('Content-Type') || '';",
+          "if (contentType.includes('application/json')) {",
+          "  pm.test('JSON response has code/status/message/data keys when using formatter', function () {",
+          "    const json = pm.response.json();",
+          "    if (json && Object.prototype.hasOwnProperty.call(json, 'status')) {",
+          "      pm.expect(json).to.have.property('code');",
+          "      pm.expect(json).to.have.property('message');",
+          "      pm.expect(json).to.have.property('data');",
+          "    }",
+          "  });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "00 Setup & Auth",
+      "item": [
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Admin login success', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) { pm.environment.set('admin_token', json.data.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@cbt.test\",\n  \"password\": \"password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Register success', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.user && json.data.user.id) { pm.environment.set('user_id', json.data.user.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"User Test {{run_id}}\",\n  \"email\": \"{{user_email}}\",\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\",\n  \"phone\": \"08123456789\",\n  \"institution\": \"Sekolah Test\",\n  \"identity_number\": \"ID-{{run_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Approve User Account",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}/approve-account",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{user_id}}",
+                "approve-account"
+              ]
+            }
+          }
+        },
+        {
+          "name": "User Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('User login success', function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) { pm.environment.set('user_token', json.data.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "me"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/logout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "logout"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 Payment & Approval",
+      "item": [
+        {
+          "name": "User Upload Payment Proof",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Upload payment proof success', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.environment.set('payment_proof_id', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "amount",
+                  "value": "100000",
+                  "type": "text"
+                },
+                {
+                  "key": "payment_date",
+                  "value": "{{today}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/payment-proofs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payment-proofs"
+              ]
+            },
+            "description": "Pilih file jpg/png/pdf pada field file sebelum Send."
+          }
+        },
+        {
+          "name": "User List Payment Proofs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/payment-proofs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "payment-proofs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin List Payment Proofs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/payment-proofs?status=pending_review",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "payment-proofs"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending_review"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Show Payment Proof",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/payment-proofs/{{payment_proof_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "payment-proofs",
+                "{{payment_proof_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Approve Payment Proof",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/payment-proofs/{{payment_proof_id}}/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "payment-proofs",
+                "{{payment_proof_id}}",
+                "approve"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Reject Payment Proof",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Bukti pembayaran tidak jelas\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/payment-proofs/{{payment_proof_id}}/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "payment-proofs",
+                "{{payment_proof_id}}",
+                "reject"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Preview Payment Proof",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/payment-proofs/{{payment_proof_id}}/preview",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "payment-proofs",
+                "{{payment_proof_id}}",
+                "preview"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin List Test Approvals",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const payload = json.data;",
+                  "const rows = Array.isArray(payload && payload.data) ? payload.data : (Array.isArray(payload) ? payload : []);",
+                  "if (rows.length && rows[0].id) { pm.environment.set('test_approval_id', rows[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/test-approvals?user_id={{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "test-approvals"
+              ],
+              "query": [
+                {
+                  "key": "user_id",
+                  "value": "{{user_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "User List Test Approvals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my/test-approvals",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my",
+                "test-approvals"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Admin Users",
+      "item": [
+        {
+          "name": "Admin List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users?search={{user_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "{{user_email}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Show User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{user_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Reject User Account",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}/reject-account",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{user_id}}",
+                "reject-account"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Reset User Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/{{user_id}}/reset-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users",
+                "{{user_id}}",
+                "reset-password"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Question Bank & Questions",
+      "item": [
+        {
+          "name": "Create Question Bank",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create question bank success', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.environment.set('question_bank_id', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"QB-{{run_id}}\",\n  \"title\": \"Bank Soal Test {{run_id}}\",\n  \"description\": \"Bank soal untuk test API Postman\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/question-banks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "question-banks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Question Banks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/question-banks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "question-banks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Show Question Bank",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/question-banks/{{question_bank_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "question-banks",
+                "{{question_bank_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Question",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create question success', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.environment.set('question_id', json.data.id); }",
+                  "if (json.data && json.data.options && json.data.options.length) { pm.environment.set('selected_option_id', json.data.options[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_bank_id\": \"{{question_bank_id}}\",\n  \"section_type\": \"reading\",\n  \"question_type\": \"multiple_choice_text\",\n  \"stem_html\": \"<p>Contoh soal API: jawaban yang benar adalah A.</p>\",\n  \"explanation_html\": \"<p>Ini hanya data dummy untuk testing.</p>\",\n  \"audio_max_play_count\": 1,\n  \"options\": [\n    {\n      \"option_html\": \"<p>Jawaban A</p>\",\n      \"is_correct\": true\n    },\n    {\n      \"option_html\": \"<p>Jawaban B</p>\",\n      \"is_correct\": false\n    },\n    {\n      \"option_html\": \"<p>Jawaban C</p>\",\n      \"is_correct\": false\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/questions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "questions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Questions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/questions?question_bank_id={{question_bank_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "questions"
+              ],
+              "query": [
+                {
+                  "key": "question_bank_id",
+                  "value": "{{question_bank_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Show Question",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/questions/{{question_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "questions",
+                "{{question_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Question Bank",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Bank Soal Updated {{run_id}}\",\n  \"description\": \"Deskripsi diperbarui\",\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/question-banks/{{question_bank_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "question-banks",
+                "{{question_bank_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Question Bank",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/question-banks/{{question_bank_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "question-banks",
+                "{{question_bank_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Question",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stem_html\": \"<p>Contoh soal API (updated): jawaban yang benar adalah A.</p>\",\n  \"explanation_html\": \"<p>Penjelasan diperbarui.</p>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/questions/{{question_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "questions",
+                "{{question_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Question",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/questions/{{question_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "questions",
+                "{{question_id}}"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Exam Package & Session",
+      "item": [
+        {
+          "name": "Create Exam Package",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create exam package success', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.environment.set('exam_package_id', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PKG-{{run_id}}\",\n  \"title\": \"Paket Ujian Test {{run_id}}\",\n  \"description\": \"Paket dummy untuk test API\",\n  \"duration_minutes\": 120,\n  \"shuffle_questions\": true,\n  \"shuffle_options\": true,\n  \"max_tab_switch\": 3,\n  \"max_fullscreen_exit\": 3,\n  \"is_active\": true,\n  \"banks\": [\n    {\n      \"question_bank_id\": \"{{question_bank_id}}\",\n      \"section_type\": \"reading\",\n      \"question_count\": 1,\n      \"sort_order\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/exam-packages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-packages"
+              ]
+            },
+            "description": "Membuat package sekaligus mapping bank soal agar runtime exam memiliki snapshot soal."
+          }
+        },
+        {
+          "name": "List Exam Packages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-packages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-packages"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Show Exam Package",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-packages/{{exam_package_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-packages",
+                "{{exam_package_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Exam Package",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Paket Ujian Updated {{run_id}}\",\n  \"description\": \"Deskripsi paket diperbarui\",\n  \"duration_minutes\": 90,\n  \"is_active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/exam-packages/{{exam_package_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-packages",
+                "{{exam_package_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Exam Package",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-packages/{{exam_package_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-packages",
+                "{{exam_package_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Exam Session",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create exam session success', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.environment.set('exam_session_id', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"exam_package_id\": \"{{exam_package_id}}\",\n  \"code\": \"SES-{{run_id}}\",\n  \"title\": \"Sesi Test {{run_id}}\",\n  \"description\": \"Sesi dummy untuk test Postman\",\n  \"session_date\": \"{{today}}\",\n  \"start_time\": \"{{start_time}}\",\n  \"end_time\": \"{{end_time}}\",\n  \"duration_minutes\": 120,\n  \"max_participants\": 10,\n  \"show_result_to_user\": true,\n  \"auto_generate_enabled\": false,\n  \"access_code\": \"TEST123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Exam Session",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Sesi Updated {{run_id}}\",\n  \"max_participants\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions/{{exam_session_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions",
+                "{{exam_session_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Publish Exam Session",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions/{{exam_session_id}}/publish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions",
+                "{{exam_session_id}}",
+                "publish"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Close Exam Session",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions/{{exam_session_id}}/close",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions",
+                "{{exam_session_id}}",
+                "close"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Finish Exam Session",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions/{{exam_session_id}}/finish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions",
+                "{{exam_session_id}}",
+                "finish"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Cancel Exam Session",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions/{{exam_session_id}}/cancel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions",
+                "{{exam_session_id}}",
+                "cancel"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Show Exam Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions/{{exam_session_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions",
+                "{{exam_session_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Manual Assign Participant",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Manual assign success', function () { pm.expect([200, 201]).to.include(pm.response.code); });",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.environment.set('registration_id', json.data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": \"{{user_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions/{{exam_session_id}}/participants/manual-assign",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions",
+                "{{exam_session_id}}",
+                "participants",
+                "manual-assign"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Auto Generate Participants",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"count\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions/{{exam_session_id}}/participants/auto-generate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions",
+                "{{exam_session_id}}",
+                "participants",
+                "auto-generate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Participant",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions/{{exam_session_id}}/participants/{{registration_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions",
+                "{{exam_session_id}}",
+                "participants",
+                "{{registration_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Participants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-sessions/{{exam_session_id}}/participants",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-sessions",
+                "{{exam_session_id}}",
+                "participants"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 User Dashboard & Exam Runtime",
+      "item": [
+        {
+          "name": "User Dashboard Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my",
+                "profile"
+              ]
+            }
+          }
+        },
+        {
+          "name": "User List Exam Sessions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my/exam-sessions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my",
+                "exam-sessions"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Start Exam",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.environment.set('attempt_id', json.data.id); }",
+                  "if (json.data && json.data.current_question && json.data.current_question.id) { pm.environment.set('attempt_question_id', json.data.current_question.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/exam-sessions/{{exam_session_id}}/start",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-sessions",
+                "{{exam_session_id}}",
+                "start"
+              ]
+            },
+            "description": "Jika attempt sukses tetapi total_questions = 0, berarti package belum punya mapping exam_package_banks."
+          }
+        },
+        {
+          "name": "Get Active Attempt",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my/active-attempt",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my",
+                "active-attempt"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resume Exam",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/exam-attempts/{{attempt_id}}/resume",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-attempts",
+                "{{attempt_id}}",
+                "resume"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Question 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) { pm.environment.set('attempt_question_id', json.data.id); }",
+                  "if (json.data && json.data.options && json.data.options.length) { pm.environment.set('selected_option_id', json.data.options[0].id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/exam-attempts/{{attempt_id}}/questions/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-attempts",
+                "{{attempt_id}}",
+                "questions",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Save Answer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_id\": \"{{attempt_question_id}}\",\n  \"selected_option_id\": \"{{selected_option_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/exam-attempts/{{attempt_id}}/answers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-attempts",
+                "{{attempt_id}}",
+                "answers"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Doubtful",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_id\": \"{{attempt_question_id}}\",\n  \"is_doubtful\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/exam-attempts/{{attempt_id}}/mark-doubt",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-attempts",
+                "{{attempt_id}}",
+                "mark-doubt"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Navigate Next",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"direction\": \"next\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/exam-attempts/{{attempt_id}}/navigate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-attempts",
+                "{{attempt_id}}",
+                "navigate"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Heartbeat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/exam-attempts/{{attempt_id}}/heartbeat",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-attempts",
+                "{{attempt_id}}",
+                "heartbeat"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Log Violation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"violation_type\": \"tab_switch\",\n  \"severity\": \"low\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/exam-attempts/{{attempt_id}}/violations",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-attempts",
+                "{{attempt_id}}",
+                "violations"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Log Audio Play",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"question_id\": \"{{question_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/exam-attempts/{{attempt_id}}/audio-play",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-attempts",
+                "{{attempt_id}}",
+                "audio-play"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Submit Exam",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"confirmation\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/exam-attempts/{{attempt_id}}/submit",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-attempts",
+                "{{attempt_id}}",
+                "submit"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Attempt Result",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/exam-attempts/{{attempt_id}}/result",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "exam-attempts",
+                "{{attempt_id}}",
+                "result"
+              ]
+            }
+          }
+        },
+        {
+          "name": "User Result History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/my/results",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "my",
+                "results"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Admin Settings",
+      "item": [
+        {
+          "name": "Get Exam Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/exam",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "settings",
+                "exam"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Exam Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"default_duration_minutes\": 120,\n  \"default_max_tab_switch\": 3,\n  \"default_max_fullscreen_exit\": 3,\n  \"auto_submit_on_violation_limit\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/settings/exam",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "settings",
+                "exam"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Admin Monitoring & Export",
+      "item": [
+        {
+          "name": "Admin List Attempts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-attempts?session_id={{exam_session_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-attempts"
+              ],
+              "query": [
+                {
+                  "key": "session_id",
+                  "value": "{{exam_session_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Show Attempt",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/exam-attempts/{{attempt_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "exam-attempts",
+                "{{attempt_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin List Results",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/results?session_id={{exam_session_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "results"
+              ],
+              "query": [
+                {
+                  "key": "session_id",
+                  "value": "{{exam_session_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin List Violations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/violations?attempt_id={{attempt_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "violations"
+              ],
+              "query": [
+                {
+                  "key": "attempt_id",
+                  "value": "{{attempt_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Activity Logs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/activity-logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "activity-logs"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Analytics by Session",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics?group_by=session&session_id={{exam_session_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "analytics"
+              ],
+              "query": [
+                {
+                  "key": "group_by",
+                  "value": "session"
+                },
+                {
+                  "key": "session_id",
+                  "value": "{{exam_session_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Analytics by Package",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics?group_by=package&package_id={{exam_package_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "analytics"
+              ],
+              "query": [
+                {
+                  "key": "group_by",
+                  "value": "package"
+                },
+                {
+                  "key": "package_id",
+                  "value": "{{exam_package_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Analytics by Section",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics?group_by=section&session_id={{exam_session_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "analytics"
+              ],
+              "query": [
+                {
+                  "key": "group_by",
+                  "value": "section"
+                },
+                {
+                  "key": "session_id",
+                  "value": "{{exam_session_id}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Admin Export Results",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/export/results?session_id={{exam_session_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "export",
+                "results"
+              ],
+              "query": [
+                {
+                  "key": "session_id",
+                  "value": "{{exam_session_id}}"
+                }
+              ]
+            },
+            "description": "Response berupa file Excel, bukan JSON."
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Media",
+      "item": [
+        {
+          "name": "Media Proxy",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/media/payment-proofs/example.jpg",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "media",
+                "payment-proofs",
+                "example.jpg"
+              ]
+            },
+            "description": "Authenticated proxy untuk mengakses file media (gambar/audio). Ganti path sesuai file yang ada."
+          }
+        }
+      ]
+    },
+    {
+      "name": "90 Optional / Negative Tests",
+      "description": "Jalankan folder ini terpisah. Beberapa request sengaja dibuat untuk memastikan error handling, atau bisa mengubah data yang dipakai happy path.",
+      "item": [
+        {
+          "name": "Login Wrong Password - Expect 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{user_email}}\",\n  \"password\": \"wrong-password\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "User Access Admin Route - Expect 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{user_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Approve Same Payment Proof Again - Expect 422",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/payment-proofs/{{payment_proof_id}}/approve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "payment-proofs",
+                "{{payment_proof_id}}",
+                "approve"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -106,20 +106,26 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 ### P1 - Exam Reliability
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Fullscreen enforcement** | ✅ Selesai | Overlay request & exit detection |
-| 2 | **Tab switch detection** | ✅ Selesai | visibilitychange logging via API |
-| 3 | **Disable right click/copy** | ✅ Selesai | copy/paste/contextmenu di disable |
-| 4 | **Warning modal violation** | ✅ Selesai | Ditampilkan saat max pelanggaran terlewati |
-| 5 | **Route guard saat exam aktif** | ✅ Selesai | beforeunload event |
+| 1 | **Fullscreen enforcement** | ✅ Selesai | Request fullscreen saat exam start, detect exit |
+| 2 | **Tab switch detection** | ✅ Selesai | Detect visibility change, kirim violation |
+| 3 | **Disable right click/copy** | ✅ Selesai | Di area exam |
+| 4 | **Warning modal violation** | ✅ Selesai | Saat threshold terlewati |
+| 5 | **Route guard saat exam aktif** | ✅ Selesai | Cegah keluar tanpa konfirmasi |
 
 ### P2 - Polish
 | # | Fitur | Status | Catatan |
 |---|-------|--------|---------|
-| 1 | **Loading skeleton** | ✅ Selesai | Dashboard, History, Exam menggunakan skeleton |
-| 2 | **State management** | ✅ Selesai | TanStack Query diimplementasi pada Profile, Dashboard, History |
-| 3 | **E2E tests** | ✅ Selesai | Playwright setup & basic login test |
-| 4 | **Responsive mobile exam** | ✅ Selesai | Grid responsif dan overflow sudah dicek |
-| 5 | **Accessibility** | ✅ Selesai | ARIA Roles dan focus ring pada opsi jawaban |
+| 1 | **Loading skeleton** | ✅ Selesai | Dashboard, history, exam perlu skeleton |
+| 2 | **State management** | ✅ Selesai | Menggunakan @tanstack/react-query |
+| 3 | **E2E tests** | ⏸️ Ditunda | Playwright (Dikerjakan nanti) |
+| 4 | **Responsive mobile exam** | ✅ Selesai | Layout soal & navigasi grid |
+| 5 | **Accessibility** | ✅ Selesai | Focus state, aria, keyboard navigation |
+
+### P3 - Backend Integration & Notifications
+| # | Fitur | Status | Catatan |
+|---|-------|--------|---------|
+| 1 | **Media Proxy Authentication** | ❌ Belum | Verifikasi token Sanctum untuk `<img src>` audio/image proxy |
+| 2 | **Account Status Notification** | ❌ Belum | Implementasi websocket/polling untuk update status akun |
 
 ---
 
@@ -134,15 +140,18 @@ Dokumen ini adalah breakdown pekerjaan frontend peserta `fe-cbt` berdasarkan kon
 - ✅ Start/resume exam
 - ✅ Get question/save answer/submit
 
-### P1 - Exam Reliability
-- Fullscreen + tab switch detection
-- Violation logging client events
-- Result visibility
-- Loading skeleton
+### P1 - Exam Reliability ✅ DONE
+- ✅ Fullscreen + tab switch detection
+- ✅ Violation logging client events
+- ✅ Result visibility
+- ✅ Loading skeleton
 
-### P2 - Polish ✅ DONE
+### P2 - Polish
 - ✅ Better UX for retake
 - ✅ Richer history and profile
-- ✅ E2E tests (Playwright setup)
-- ✅ State management layer (TanStack Query)
-- ✅ Loading skeleton
+- ⏸️ E2E tests (Ditunda)
+- ✅ State management layer
+
+### P3 - Backend Integration & Notifications (NEW)
+- Verifikasi keamanan URL media proxy (image/audio)
+- Real-time/polling notifikasi status akun user

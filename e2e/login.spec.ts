@@ -5,12 +5,13 @@ test('has title', async ({ page }) => {
   await expect(page).toHaveTitle(/CAT\/CBT TOAFL/);
 });
 
-test('login flow validation', async ({ page }) => {
+test('login form prevents empty submit via HTML5 validation', async ({ page }) => {
   await page.goto('/login');
   
-  // Try to submit empty form
+  // Try to submit empty form — browser required attribute prevents it
   await page.click('button[type="submit"]');
   
-  // Expect validation error
-  await expect(page.getByText('Email harus diisi')).toBeVisible();
+  // Should still be on login page
+  await expect(page).toHaveURL(/login/);
+  await expect(page.locator('input[name="email"]')).toBeVisible();
 });
