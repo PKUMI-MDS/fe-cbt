@@ -35,7 +35,7 @@ export default function LoginForm() {
       }
 
       await saveSession(response.token);
-      router.push(response.user.account_status === "active" ? "/dashboard" : "/waiting-approval");
+      window.location.href = response.user.account_status === "active" ? "/dashboard" : "/waiting-approval";
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -44,7 +44,7 @@ export default function LoginForm() {
           password: err.errors?.password?.[0] ?? "",
         });
         if (err.code === 403) {
-          router.push(`/waiting-approval?message=${encodeURIComponent(err.message)}`);
+          window.location.href = `/waiting-approval?message=${encodeURIComponent(err.message)}`;
         }
       } else {
         setError("Login gagal. Coba lagi.");

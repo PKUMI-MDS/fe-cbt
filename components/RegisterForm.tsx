@@ -49,7 +49,7 @@ export default function RegisterForm() {
 
     try {
       await registerParticipant(payload);
-      router.push("/waiting-approval");
+      window.location.href = "/waiting-approval";
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
