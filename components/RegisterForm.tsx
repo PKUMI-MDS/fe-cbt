@@ -29,6 +29,7 @@ export default function RegisterForm() {
       identity_number: String(formData.get("identity_number") ?? ""),
       password: String(formData.get("password") ?? ""),
       password_confirmation: String(formData.get("password_confirmation") ?? ""),
+      exam_type: String(formData.get("exam_type") ?? ""),
     };
 
     const nextFieldErrors: Record<string, string> = {};
@@ -61,6 +62,7 @@ export default function RegisterForm() {
           identity_number: err.errors?.identity_number?.[0] ?? "",
           password: err.errors?.password?.[0] ?? "",
           password_confirmation: err.errors?.password_confirmation?.[0] ?? "",
+          exam_type: err.errors?.exam_type?.[0] ?? "",
         });
       } else {
         setError("Registrasi gagal. Coba lagi.");

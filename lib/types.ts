@@ -46,6 +46,7 @@ export type RegisterPayload = {
   phone?: string;
   institution?: string;
   identity_number?: string;
+  exam_type?: string;
 };
 
 export type RegisterResponse = {
@@ -205,4 +206,13 @@ export type AttemptResult = {
   submitted_at?: string | null;
   created_at?: string | null;
   exam_session?: ExamSession | null;
+};
+
+export type ExamSettings = {
+  auto_submit_on_violation_limit: boolean;
+  max_tab_switch: number;
+  max_fullscreen_exit: number;
+  shuffle_questions: boolean;
+  shuffle_options: boolean;
+  show_result_to_user: boolean;
 };

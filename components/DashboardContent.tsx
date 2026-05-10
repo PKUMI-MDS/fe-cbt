@@ -217,7 +217,11 @@ export default function DashboardContent() {
                         <td className="px-4 py-4 font-bold text-emerald-700">
                           {result.published_at ? "Dipublikasi" : "Menunggu"}
                         </td>
-                        <td className="px-4 py-4 font-bold">{result.total_score ?? "-"}</td>
+                        <td className="px-4 py-4 font-bold">
+                          {result.published_at && result.exam_session?.show_result_to_user
+                            ? (result.total_score ?? "-")
+                            : "-"}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

@@ -8,6 +8,7 @@ import AuthGuard from "@/components/AuthGuard";
 import { ApiError } from "@/lib/api";
 import {
   getActiveAttempt,
+  getExamSettings,
   getQuestion,
   logAudioPlay,
   logViolation,
@@ -17,10 +18,19 @@ import {
   sendHeartbeat,
   submitExam,
 } from "@/lib/auth-api";
-import type { AttemptResult, Question } from "@/lib/types";
+import type { AttemptResult, ExamSettings, Question } from "@/lib/types";
 import ExamSkeleton from "@/components/ExamSkeleton";
 
 const HEARTBEAT_INTERVAL_MS = 30_000;
+
+const DEFAULT_EXAM_SETTINGS: ExamSettings = {
+  auto_submit_on_violation_limit: true,
+  max_tab_switch: 3,
+  max_fullscreen_exit: 3,
+  shuffle_questions: true,
+  shuffle_options: true,
+  show_result_to_user: true,
+};
 
 function formatTime(seconds: number) {
   if (seconds <= 0) return "00:00:00";
@@ -52,9 +62,11 @@ export default function ExamPage() {
 
   // P1: Exam Reliability States
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [violationCount, setViolationCount] = useState(0);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const [fullscreenExitCount, setFullscreenExitCount] = useState(0);
   const [showViolationModal, setShowViolationModal] = useState(false);
-  const MAX_VIOLATIONS = 3;
+  const [examSettings, setExamSettings] = useState<ExamSettings>(DEFAULT_EXAM_SETTINGS);
+  const shouldAutoSubmitRef = useRef(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -108,6 +120,14 @@ export default function ExamPage() {
         if (q.is_doubtful) {
           setDoubtfulSet((prev) => new Set(prev).add(currentNumber));
         }
+
+        // Load exam settings (dynamic limits, auto-submit, etc.)
+        try {
+          const settings = await getExamSettings();
+          setExamSettings(settings);
+        } catch {
+          // fallback ke DEFAULT_EXAM_SETTINGS yang sudah di-set di initial state
+        }
       } catch (err) {
         setError(err instanceof ApiError ? err.message : "Gagal memuat soal ujian.");
       } finally {
@@ -157,19 +177,37 @@ export default function ExamPage() {
       if (!attemptId) return;
       try {
         await logViolation(attemptId, { type, detail });
-        setViolationCount((prev) => {
-          const next = prev + 1;
-          if (next >= MAX_VIOLATIONS) {
-            setShowViolationModal(true);
-          }
-          return next;
-        });
-        setToast(`Peringatan: ${detail}. Jangan diulangi!`);
       } catch {
         // silent fail if unable to log
       }
+
+      if (type === "tab_switch") {
+        setTabSwitchCount((prev) => {
+          const next = prev + 1;
+          if (next >= examSettings.max_tab_switch) {
+            setShowViolationModal(true);
+            if (examSettings.auto_submit_on_violation_limit) {
+              shouldAutoSubmitRef.current = true;
+            }
+          }
+          return next;
+        });
+      } else if (type === "fullscreen_exit") {
+        setFullscreenExitCount((prev) => {
+          const next = prev + 1;
+          if (next >= examSettings.max_fullscreen_exit) {
+            setShowViolationModal(true);
+            if (examSettings.auto_submit_on_violation_limit) {
+              shouldAutoSubmitRef.current = true;
+            }
+          }
+          return next;
+        });
+      }
+
+      setToast(`Peringatan: ${detail}. Jangan diulangi!`);
     },
-    [attemptId]
+    [attemptId, examSettings]
   );
 
   // Anti-cheat & Route Guard
@@ -351,6 +389,14 @@ export default function ExamPage() {
     [attemptId, router]
   );
 
+  // Watch for auto-submit trigger
+  useEffect(() => {
+    if (shouldAutoSubmitRef.current && attemptId) {
+      shouldAutoSubmitRef.current = false;
+      void handleSubmitFinal(true);
+    }
+  }, [tabSwitchCount, fullscreenExitCount, attemptId, handleSubmitFinal]);
+
   const answeredCount = Object.values(answeredMap).filter((v) => v !== null && v !== undefined).length;
   const emptyCount = totalQuestions - answeredCount;
   const doubtfulCount = doubtfulSet.size;
@@ -478,6 +524,10 @@ export default function ExamPage() {
                   src={currentQ.image_url}
                   alt="Gambar soal"
                   className="mt-4 max-h-72 rounded-xl object-contain"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).style.display = "none";
+                    setToast("Gagal memuat gambar soal. URL mungkin sudah expired.");
+                  }}
                 />
               ) : null}
 
@@ -643,8 +693,11 @@ export default function ExamPage() {
               Peringatan Pelanggaran
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500">
-              Anda telah melakukan pelanggaran lebih dari batas yang diizinkan (maksimal {MAX_VIOLATIONS} kali). 
-              Aktivitas ini telah dicatat. Harap kembali mengerjakan ujian dengan jujur.
+              Anda telah melakukan pelanggaran lebih dari batas yang diizinkan
+              (tab switch: {examSettings.max_tab_switch}x, fullscreen exit: {examSettings.max_fullscreen_exit}x).
+              {examSettings.auto_submit_on_violation_limit
+                ? " Ujian akan disubmit otomatis oleh sistem."
+                : " Aktivitas ini telah dicatat. Harap kembali mengerjakan ujian dengan jujur."}
             </p>
             <div className="mt-6">
               <button

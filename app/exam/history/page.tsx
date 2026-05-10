@@ -71,12 +71,12 @@ export default function ExamHistoryPage() {
                         {result.published_at ? "Dipublikasi" : "Menunggu"}
                       </td>
                       <td className="px-6 py-5 font-bold">
-                        {result.published_at && result.total_score != null
+                        {result.published_at && result.exam_session?.show_result_to_user && result.total_score != null
                           ? String(result.total_score)
                           : "-"}
                       </td>
                       <td className="px-6 py-5">
-                        {result.published_at ? (
+                        {result.published_at && result.exam_session?.show_result_to_user ? (
                           <Link
                             href={`/exam/score?attempt_id=${result.id}`}
                             className="rounded-xl bg-brand-50 px-4 py-2 font-bold text-brand-700 hover:bg-brand-100 transition"

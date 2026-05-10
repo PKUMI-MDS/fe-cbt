@@ -6,6 +6,7 @@ import type {
   AuthUser,
   ExamResult,
   ExamSessionRegistration,
+  ExamSettings,
   HeartbeatResponse,
   LoginResponse,
   PaymentProof,
@@ -154,5 +155,10 @@ export function getAttemptResult(attemptId: number) {
 /** Riwayat semua hasil ujian peserta */
 export function getResultHistory() {
   return api.get<PaginatedData<ExamResult>>("/my/results");
+}
+
+/** Ambil global exam settings — fallback di-handle caller */
+export function getExamSettings() {
+  return api.get<ExamSettings>("/settings/exam");
 }
 
