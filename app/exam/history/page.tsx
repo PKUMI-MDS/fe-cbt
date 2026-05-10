@@ -78,7 +78,7 @@ export default function ExamHistoryPage() {
                       <td className="px-6 py-5">
                         {result.published_at ? (
                           <Link
-                            href={`/exam/score?result_id=${result.id}`}
+                            href={`/exam/score?attempt_id=${result.id}`}
                             className="rounded-xl bg-brand-50 px-4 py-2 font-bold text-brand-700 hover:bg-brand-100 transition"
                           >
                             Detail

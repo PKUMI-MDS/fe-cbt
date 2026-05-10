@@ -192,6 +192,7 @@ export type ViolationPayload = {
 };
 
 export type AttemptResult = {
+  id?: number;
   attempt_id: number;
   total_score?: number | string | null;
   listening_score?: number | string | null;
@@ -202,5 +203,6 @@ export type AttemptResult = {
   unanswered_count?: number | null;
   show_result?: boolean;
   submitted_at?: string | null;
+  created_at?: string | null;
   exam_session?: ExamSession | null;
 };

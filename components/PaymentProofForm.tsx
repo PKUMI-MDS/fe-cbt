@@ -13,7 +13,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
 function formatDate(value?: string | null) {
@@ -113,7 +113,7 @@ export default function PaymentProofForm() {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError("Ukuran file maksimal 5MB.");
+      setError("Ukuran file maksimal 2MB.");
       setIsSubmitting(false);
       return;
     }
@@ -153,7 +153,7 @@ export default function PaymentProofForm() {
               Upload Bukti Pembayaran
             </h2>
             <p className="text-sm text-slate-500">
-              Format JPG, PNG, atau PDF. Maksimal 5MB.
+              Format JPG, PNG, atau PDF. Maksimal 2MB.
             </p>
           </div>
         </div>

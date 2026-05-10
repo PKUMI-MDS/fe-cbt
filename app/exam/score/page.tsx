@@ -7,8 +7,8 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AuthGuard from "@/components/AuthGuard";
 import { ApiError } from "@/lib/api";
-import { getResultHistory } from "@/lib/auth-api";
-import type { ExamResult } from "@/lib/types";
+import { getAttemptResult } from "@/lib/auth-api";
+import type { AttemptResult } from "@/lib/types";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -17,21 +17,23 @@ function formatDate(value?: string | null) {
 
 export default function ScoreDetailPage() {
   const searchParams = useSearchParams();
-  const resultId = searchParams.get("result_id");
+  const attemptId = searchParams.get("attempt_id");
 
-  const [result, setResult] = useState<ExamResult | null>(null);
+  const [result, setResult] = useState<AttemptResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     async function load() {
       try {
-        const res = await getResultHistory();
-        const found = resultId
-          ? (res.data ?? []).find((r) => String(r.id) === resultId)
-          : (res.data ?? [])[0];
-        setResult(found ?? null);
-        if (!found) setError("Data hasil ujian tidak ditemukan.");
+        if (!attemptId) {
+          setError("ID attempt tidak ditemukan.");
+          setIsLoading(false);
+          return;
+        }
+        const data = await getAttemptResult(Number(attemptId));
+        setResult(data ?? null);
+        if (!data) setError("Data hasil ujian tidak ditemukan.");
       } catch (err) {
         setError(err instanceof ApiError ? err.message : "Gagal memuat data skor.");
       } finally {
@@ -39,7 +41,7 @@ export default function ScoreDetailPage() {
       }
     }
     void load();
-  }, [resultId]);
+  }, [attemptId]);
 
   return (
     <AuthGuard>
