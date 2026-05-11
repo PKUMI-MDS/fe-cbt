@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Providers from "@/components/Providers";
+import AccountStatusWatcher from "@/components/AccountStatusWatcher";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,7 +17,10 @@ export default function RootLayout({
   return (
     <html lang="id" className="scroll-smooth">
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <AccountStatusWatcher />
+          {children}
+        </Providers>
       </body>
     </html>
   );

@@ -117,12 +117,12 @@ export default function RegisterForm() {
         </label>
         <label className="field">
           <span>Password</span>
-          <input name="password" type="password" placeholder="Minimal 8 karakter" required />
+          <input name="password" type="password" placeholder="Minimal 8 karakter" required minLength={8} />
           {fieldErrors.password ? <small className="text-rose-600">{fieldErrors.password}</small> : null}
         </label>
         <label className="field">
           <span>Konfirmasi Password</span>
-          <input name="password_confirmation" type="password" placeholder="Ulangi password" required />
+          <input name="password_confirmation" type="password" placeholder="Ulangi password" required minLength={8} />
           {fieldErrors.password_confirmation ? <small className="text-rose-600">{fieldErrors.password_confirmation}</small> : null}
         </label>
       </div>

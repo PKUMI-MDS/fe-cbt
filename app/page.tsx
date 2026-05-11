@@ -29,15 +29,9 @@ export default function HomePage() {
                 Platform Ujian Resmi Masjid Istiqlal
               </span>
               <h1 className="max-w-4xl text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-                Ujian CBT TOAFL<br />
-                <span className="mt-2 flex flex-wrap items-center gap-4 sm:flex-nowrap">
-                  Berbasis Sesi
-                  <span className="text-base font-bold tracking-normal text-slate-800 sm:text-lg">
-                    Sertifikasi Kemahiran<br />
-                    Bahasa Arab (TOAFL)<br />
-                    Resmi &amp; Terpercaya.
-                  </span>
-                </span>
+                Sertifikasi Kemahiran<br />
+                Bahasa Arab (TOAFL)<br />
+                <span className="text-brand-700">Resmi &amp; Terpercaya.</span>
               </h1>
               <p className="mt-8 max-w-2xl border-l-4 border-brand-500 pl-4 text-base leading-8 text-slate-600 sm:text-lg">
                 Platform ujian online untuk TOAFL dan TOEFL dengan sistem berbasis
