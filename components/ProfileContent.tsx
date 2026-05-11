@@ -74,15 +74,7 @@ export default function ProfileContent() {
             <strong className="text-slate-900">{profile?.profile?.institution ?? "-"}</strong>
           </div>
         </div>
-        <div className="info-box flex items-start gap-3">
-          <div className="rounded-lg bg-brand-50 p-2 text-brand-600">
-            <CreditCard className="h-5 w-5" />
-          </div>
-          <div>
-            <small className="block text-slate-500">Nomor Identitas</small>
-            <strong className="text-slate-900">{profile?.profile?.identity_number ?? "-"}</strong>
-          </div>
-        </div>
+
         <div className="info-box flex items-start gap-3">
           <div className="rounded-lg bg-brand-50 p-2 text-brand-600">
             <ShieldCheck className="h-5 w-5" />

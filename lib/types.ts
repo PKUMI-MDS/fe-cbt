@@ -18,7 +18,6 @@ export type PaginatedData<T> = {
 export type UserProfile = {
   phone?: string | null;
   institution?: string | null;
-  identity_number?: string | null;
   address?: string | null;
 };
 
