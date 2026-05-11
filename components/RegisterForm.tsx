@@ -26,10 +26,8 @@ export default function RegisterForm() {
       email: String(formData.get("email") ?? ""),
       phone: String(formData.get("phone") ?? ""),
       institution: String(formData.get("institution") ?? ""),
-      identity_number: String(formData.get("identity_number") ?? ""),
       password: String(formData.get("password") ?? ""),
       password_confirmation: String(formData.get("password_confirmation") ?? ""),
-      exam_type: String(formData.get("exam_type") ?? ""),
     };
 
     const nextFieldErrors: Record<string, string> = {};
@@ -59,10 +57,8 @@ export default function RegisterForm() {
           email: err.errors?.email?.[0] ?? "",
           phone: err.errors?.phone?.[0] ?? "",
           institution: err.errors?.institution?.[0] ?? "",
-          identity_number: err.errors?.identity_number?.[0] ?? "",
           password: err.errors?.password?.[0] ?? "",
           password_confirmation: err.errors?.password_confirmation?.[0] ?? "",
-          exam_type: err.errors?.exam_type?.[0] ?? "",
         });
       } else {
         setError("Registrasi gagal. Coba lagi.");
@@ -101,20 +97,7 @@ export default function RegisterForm() {
           <input name="institution" placeholder="Nama instansi" />
           {fieldErrors.institution ? <small className="text-rose-600">{fieldErrors.institution}</small> : null}
         </label>
-        <label className="field">
-          <span>Nomor Identitas</span>
-          <input name="identity_number" placeholder="NIK/NIM/NIP" />
-          {fieldErrors.identity_number ? <small className="text-rose-600">{fieldErrors.identity_number}</small> : null}
-        </label>
-        <label className="field">
-          <span>Jenis Ujian</span>
-          <select name="exam_type" defaultValue="toafl">
-            <option value="toafl">TOAFL - Arabic Proficiency Test</option>
-            <option value="toefl">TOEFL - English Proficiency Test</option>
-            <option value="toafic">TOAFIC</option>
-            <option value="toefic">TOEFIC</option>
-          </select>
-        </label>
+
         <label className="field">
           <span>Password</span>
           <input name="password" type="password" placeholder="Minimal 8 karakter" required minLength={8} />

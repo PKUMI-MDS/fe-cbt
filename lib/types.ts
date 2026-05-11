@@ -45,8 +45,6 @@ export type RegisterPayload = {
   password_confirmation: string;
   phone?: string;
   institution?: string;
-  identity_number?: string;
-  exam_type?: string;
 };
 
 export type RegisterResponse = {
