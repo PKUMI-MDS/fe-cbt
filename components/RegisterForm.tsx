@@ -32,6 +32,10 @@ export default function RegisterForm() {
 
     const nextFieldErrors: Record<string, string> = {};
 
+    if (!/^\d{11,13}$/.test(payload.phone)) {
+      nextFieldErrors.phone = "No. WhatsApp harus 11-13 digit angka.";
+    }
+
     if (payload.password.length < 8) {
       nextFieldErrors.password = "Password minimal 8 karakter.";
     }

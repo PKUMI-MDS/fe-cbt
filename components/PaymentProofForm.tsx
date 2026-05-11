@@ -121,8 +121,6 @@ export default function PaymentProofForm() {
     try {
       await uploadPaymentProof({
         file,
-        amount: String(formData.get("amount") ?? ""),
-        payment_date: String(formData.get("payment_date") ?? ""),
       });
       form.reset();
       setSuccess("Bukti pembayaran berhasil dikirim dan menunggu review admin.");
@@ -171,8 +169,8 @@ export default function PaymentProofForm() {
           </div>
         ) : null}
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          <label className="field sm:col-span-2">
+        <div className="mt-6 grid gap-4">
+          <label className="field">
             <span>File Bukti</span>
             <input
               name="file"
@@ -181,20 +179,6 @@ export default function PaymentProofForm() {
               required
               className="file:mr-4 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-brand-700 hover:file:bg-brand-100"
             />
-          </label>
-          <label className="field">
-            <span>Nominal (Rp)</span>
-            <input
-              name="amount"
-              type="number"
-              min={0}
-              inputMode="numeric"
-              placeholder="Contoh: 250000"
-            />
-          </label>
-          <label className="field">
-            <span>Tanggal Bayar</span>
-            <input name="payment_date" type="date" />
           </label>
         </div>
 
@@ -260,18 +244,6 @@ export default function PaymentProofForm() {
                         </p>
                       </div>
                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                        <span>
-                          Nominal:{" "}
-                          <strong className="text-slate-700">
-                            {formatCurrency(proof.amount)}
-                          </strong>
-                        </span>
-                        <span>
-                          Tanggal:{" "}
-                          <strong className="text-slate-700">
-                            {formatDate(proof.payment_date)}
-                          </strong>
-                        </span>
                         <span>
                           Diupload:{" "}
                           <strong className="text-slate-700">
