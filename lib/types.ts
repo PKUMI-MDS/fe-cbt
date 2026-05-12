@@ -55,8 +55,6 @@ export type PaymentProof = {
   file_path?: string;
   file_name: string;
   mime_type?: string;
-  amount?: number | string | null;
-  payment_date?: string | null;
   status: "pending_review" | "approved" | "rejected" | string;
   rejection_reason?: string | null;
   created_at?: string;
@@ -65,8 +63,6 @@ export type PaymentProof = {
 
 export type PaymentProofPayload = {
   file: File;
-  amount?: string;
-  payment_date?: string;
 };
 
 export type TestApproval = {
@@ -130,29 +126,32 @@ export type ActiveAttemptResponse = {
 
 export type ExamResult = {
   id: number;
+  exam_attempt_id?: number | null;
+  exam_session_id?: number | null;
+  session_title?: string | null;
   total_score?: number | string | null;
-  listening_score?: number | string | null;
-  structure_score?: number | string | null;
-  reading_score?: number | string | null;
   correct_count?: number | null;
   wrong_count?: number | null;
   unanswered_count?: number | null;
   published_at?: string | null;
   created_at?: string | null;
+  submitted_at?: string | null;
+  show_result_to_user?: boolean;
+  status?: string | null;
   exam_session?: ExamSession | null;
 };
 
 export type QuestionOption = {
-  /** ID dari tabel question_options — dipakai sebagai selected_option_id saat saveAnswer */
   id: number;
+  option_key?: string | null;
   option_html?: string | null;
   image_url?: string | null;
   audio_url?: string | null;
 };
 
 export type Question = {
-  /** ID dari tabel exam_attempt_questions — dipakai sebagai question_id saat saveAnswer */
   id: number;
+  question_id?: number | null;
   number: number;
   total: number;
   stem_html?: string | null;
@@ -161,12 +160,11 @@ export type Question = {
   audio_max_play?: number | null;
   audio_play_count?: number | null;
   options: QuestionOption[];
-  /** ID option yang sudah dipilih sebelumnya (null jika belum dijawab) */
   selected_option_id?: number | null;
   is_doubtful?: boolean;
   section?: string | null;
   section_type?: string | null;
-}
+};
 
 export type StartExamResponse = {
   attempt: ActiveAttempt;
@@ -185,21 +183,30 @@ export type AudioPlayResponse = {
 };
 
 export type ViolationPayload = {
-  type: string;
+  violation_type:
+    | "tab_switch"
+    | "fullscreen_exit"
+    | "right_click"
+    | "copy_attempt"
+    | "multi_login_attempt"
+    | "suspicious_disconnect";
+  severity?: "low" | "medium" | "high";
   detail?: string;
 };
 
 export type AttemptResult = {
   id?: number;
   attempt_id: number;
+  exam_attempt_id?: number | null;
+  exam_session_id?: number | null;
+  session_title?: string | null;
   total_score?: number | string | null;
-  listening_score?: number | string | null;
-  structure_score?: number | string | null;
-  reading_score?: number | string | null;
   correct_count?: number | null;
   wrong_count?: number | null;
   unanswered_count?: number | null;
   show_result?: boolean;
+  show_result_to_user?: boolean;
+  status?: string | null;
   submitted_at?: string | null;
   created_at?: string | null;
   exam_session?: ExamSession | null;

@@ -80,22 +80,22 @@ export default function ExamCompletedPage() {
               </div>
             </div>
 
-            {showResult && result && (
+            {showResult && result ? (
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                <div className="info-box">
-                  <small>Listening</small>
-                  <strong className="text-2xl">{result.listening_score ?? "-"}</strong>
+                <div className="rounded-xl bg-emerald-50 p-4 text-center">
+                  <p className="text-xs font-bold text-emerald-700">Benar</p>
+                  <p className="text-2xl font-extrabold text-emerald-700">{result.correct_count ?? "-"}</p>
                 </div>
-                <div className="info-box">
-                  <small>Structure</small>
-                  <strong className="text-2xl">{result.structure_score ?? "-"}</strong>
+                <div className="rounded-xl bg-rose-50 p-4 text-center">
+                  <p className="text-xs font-bold text-rose-700">Salah</p>
+                  <p className="text-2xl font-extrabold text-rose-700">{result.wrong_count ?? "-"}</p>
                 </div>
-                <div className="info-box">
-                  <small>Reading</small>
-                  <strong className="text-2xl">{result.reading_score ?? "-"}</strong>
+                <div className="rounded-xl bg-slate-50 p-4 text-center">
+                  <p className="text-xs font-bold text-slate-500">Tidak Dijawab</p>
+                  <p className="text-2xl font-extrabold text-slate-500">{result.unanswered_count ?? "-"}</p>
                 </div>
               </div>
-            )}
+            ) : null}
 
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link href="/dashboard" className="btn-primary">

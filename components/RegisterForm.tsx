@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Paperclip } from "lucide-react";
 import { ApiError } from "@/lib/api";
@@ -9,7 +8,6 @@ import { registerParticipant } from "@/lib/auth-api";
 import type { RegisterPayload } from "@/lib/types";
 
 export default function RegisterForm() {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);

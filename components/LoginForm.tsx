@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ApiError } from "@/lib/api";
 import { loginParticipant } from "@/lib/auth-api";
@@ -9,7 +8,6 @@ import { useAuthSession } from "@/lib/use-auth-session";
 import { clearAuthToken } from "@/lib/auth";
 
 export default function LoginForm() {
-  const router = useRouter();
   const { saveSession } = useAuthSession();
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});

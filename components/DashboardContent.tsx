@@ -12,21 +12,6 @@ import {
   getMyResults,
   getMyTestApprovals,
 } from "@/lib/auth-api";
-import type {
-  ActiveAttemptResponse,
-  AuthUser,
-  ExamResult,
-  ExamSessionRegistration,
-  TestApproval,
-} from "@/lib/types";
-
-type DashboardState = {
-  activeAttempt: ActiveAttemptResponse;
-  approvals: TestApproval[];
-  profile: AuthUser | null;
-  registrations: ExamSessionRegistration[];
-  results: ExamResult[];
-};
 
 function formatDateTime(date?: string | null, fallback?: string | null) {
   const value = date ?? fallback;
@@ -218,7 +203,7 @@ export default function DashboardContent() {
                           {result.published_at ? "Dipublikasi" : "Menunggu"}
                         </td>
                         <td className="px-4 py-4 font-bold">
-                          {result.published_at && result.exam_session?.show_result_to_user
+                          {result.published_at && (result.show_result_to_user ?? result.exam_session?.show_result_to_user)
                             ? (result.total_score ?? "-")
                             : "-"}
                         </td>

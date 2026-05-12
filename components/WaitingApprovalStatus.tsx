@@ -24,7 +24,6 @@ export default function WaitingApprovalStatus() {
   const [message, setMessage] = useState("");
   const [toast, setToast] = useState("");
   const [countdown, setCountdown] = useState(0);
-  const [wasPending, setWasPending] = useState(false);
   const previousStatusRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -36,9 +35,6 @@ export default function WaitingApprovalStatus() {
   useEffect(() => {
     if (user?.account_status && !previousStatusRef.current) {
       previousStatusRef.current = user.account_status;
-      if (user.account_status === "pending_verification") {
-        setWasPending(true);
-      }
     }
   }, [user?.account_status]);
 

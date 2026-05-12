@@ -13,7 +13,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
 function formatDate(value?: string | null) {
@@ -21,17 +21,6 @@ function formatDate(value?: string | null) {
   return new Intl.DateTimeFormat("id-ID", { dateStyle: "medium" }).format(
     new Date(value)
   );
-}
-
-function formatCurrency(value?: number | string | null) {
-  if (value === null || value === undefined) return "-";
-  const num = typeof value === "string" ? Number(value) : value;
-  if (Number.isNaN(num)) return String(value);
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(num);
 }
 
 function statusConfig(status: string) {
@@ -113,7 +102,7 @@ export default function PaymentProofForm() {
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setError("Ukuran file maksimal 2MB.");
+      setError("Ukuran file maksimal 5MB.");
       setIsSubmitting(false);
       return;
     }
@@ -151,7 +140,7 @@ export default function PaymentProofForm() {
               Upload Bukti Pembayaran
             </h2>
             <p className="text-sm text-slate-500">
-              Format JPG, PNG, atau PDF. Maksimal 2MB.
+              Format JPG, PNG, atau PDF. Maksimal 5MB.
             </p>
           </div>
         </div>

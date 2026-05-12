@@ -18,7 +18,7 @@ import {
   sendHeartbeat,
   submitExam,
 } from "@/lib/auth-api";
-import type { AttemptResult, ExamSettings, Question } from "@/lib/types";
+import type { AttemptResult, ExamSettings, Question, ViolationPayload } from "@/lib/types";
 import ExamSkeleton from "@/components/ExamSkeleton";
 
 const HEARTBEAT_INTERVAL_MS = 30_000;
@@ -173,10 +173,10 @@ export default function ExamPage() {
   }, [attemptId, isLoading, router]);
 
   const handleViolation = useCallback(
-    async (type: string, detail: string) => {
+    async (type: ViolationPayload["violation_type"], detail: string) => {
       if (!attemptId) return;
       try {
-        await logViolation(attemptId, { type, detail });
+        await logViolation(attemptId, { violation_type: type, severity: "medium", detail });
       } catch {
         // silent fail if unable to log
       }
@@ -346,9 +346,9 @@ export default function ExamPage() {
   }, [attemptId, currentQ, currentNumber, doubtfulSet]);
 
   const handlePlayAudio = useCallback(async () => {
-    if (!attemptId || !currentQ) return;
-    try {
-      const result = await logAudioPlay(attemptId, currentQ.id);
+      if (!attemptId || !currentQ) return;
+      try {
+      const result = await logAudioPlay(attemptId, currentQ.question_id ?? currentQ.id);
       if (!result.allowed) {
         setToast(`Batas putar audio (${result.max_play}x) sudah tercapai`);
         return;

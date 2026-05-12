@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Phone, Building2, CreditCard, ShieldCheck } from "lucide-react";
+import { Phone, Building2, ShieldCheck } from "lucide-react";
 import { getMyProfile } from "@/lib/auth-api";
 import ProfileSkeleton from "@/components/ProfileSkeleton";
 

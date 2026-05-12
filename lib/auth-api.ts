@@ -1,17 +1,19 @@
 import { api } from "@/lib/api";
 import type {
-  AttemptResult,
+  ActiveAttempt,
   ActiveAttemptResponse,
+  AttemptResult,
   AudioPlayResponse,
   AuthUser,
   ExamResult,
+  ExamSession,
   ExamSessionRegistration,
   ExamSettings,
   HeartbeatResponse,
   LoginResponse,
+  PaginatedData,
   PaymentProof,
   PaymentProofPayload,
-  PaginatedData,
   Question,
   RegisterPayload,
   RegisterResponse,
@@ -20,7 +22,153 @@ import type {
   ViolationPayload,
 } from "@/lib/types";
 
-// ─── Auth ────────────────────────────────────────────────────────────────────
+type RecordValue = Record<string, unknown>;
+
+function asRecord(value: unknown): RecordValue {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as RecordValue) : {};
+}
+
+function asNumber(value: unknown, fallback = 0) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function asString(value: unknown, fallback = "") {
+  return typeof value === "string" ? value : fallback;
+}
+
+function normalizeAttempt(rawValue: unknown): ActiveAttempt {
+  const raw = asRecord(rawValue);
+
+  return {
+    id: asNumber(raw.id),
+    exam_session_id: asNumber(raw.exam_session_id),
+    status: asString(raw.status, "in_progress"),
+    started_at: asString(raw.started_at, "") || null,
+    ends_at: asString(raw.ends_at, "") || null,
+    current_question_number: asNumber(raw.current_question_number, 1),
+    total_questions: asNumber(raw.total_questions),
+    remaining_seconds: asNumber(raw.remaining_seconds),
+  };
+}
+
+function normalizeSession(rawValue: unknown, attempt?: ActiveAttempt): Pick<ExamSession, "id" | "title" | "code"> {
+  const raw = asRecord(rawValue);
+
+  return {
+    id: asNumber(raw.id, attempt?.exam_session_id ?? 0),
+    title: asString(raw.title, "Ujian"),
+    code: asString(raw.code, "") || null,
+  };
+}
+
+function normalizeStartResponse(rawValue: unknown): StartExamResponse {
+  const raw = asRecord(rawValue);
+  const maybeAttempt = raw.attempt ? asRecord(raw.attempt) : raw;
+  const attempt = normalizeAttempt(maybeAttempt);
+
+  return {
+    attempt,
+    session: normalizeSession(raw.session ?? maybeAttempt.session, attempt),
+  };
+}
+
+function normalizeQuestion(rawValue: unknown): Question {
+  const raw = asRecord(rawValue);
+  const snapshot = asRecord(raw.snapshot);
+  const options = Array.isArray(raw.options) ? raw.options.map(asRecord) : [];
+
+  return {
+    id: asNumber(raw.id),
+    question_id: raw.question_id === null || raw.question_id === undefined ? null : asNumber(raw.question_id),
+    number: asNumber(raw.display_number ?? raw.number, 1),
+    total: asNumber(raw.total ?? raw.total_questions),
+    stem_html: asString(raw.stem_html ?? snapshot.stem_html, ""),
+    image_url: asString(raw.image_url ?? snapshot.image_url, "") || null,
+    audio_url: asString(raw.audio_url ?? snapshot.audio_url, "") || null,
+    audio_max_play: asNumber(raw.audio_max_play ?? raw.audio_max_play_count ?? snapshot.audio_max_play_count, 1),
+    audio_play_count: asNumber(raw.audio_play_count),
+    options: options.map((option) => ({
+      id: asNumber(option.id),
+      option_key: asString(option.option_key, "") || null,
+      option_html: asString(option.option_html, ""),
+    })),
+    selected_option_id:
+      raw.selected_option_id === null || raw.selected_option_id === undefined
+        ? null
+        : asNumber(raw.selected_option_id),
+    is_doubtful: Boolean(raw.is_doubtful),
+    section: asString(raw.section ?? snapshot.section, "") || null,
+    section_type: asString(raw.section_type ?? snapshot.section_type, "") || null,
+  };
+}
+
+function normalizeResult(rawValue: unknown): AttemptResult {
+  const raw = asRecord(rawValue);
+  const result = raw.result === null ? raw : raw.result ? asRecord(raw.result) : raw;
+  const metadata = asRecord(result.metadata);
+  const showResult = Boolean(result.show_result ?? result.show_result_to_user ?? raw.show_result_to_user ?? raw.result !== null);
+  const attemptId = asNumber(result.attempt_id ?? result.exam_attempt_id ?? raw.attempt_id);
+  const sessionTitle = asString(result.session_title, "");
+
+  return {
+    id: result.id === undefined ? undefined : asNumber(result.id),
+    attempt_id: attemptId,
+    exam_attempt_id: attemptId || null,
+    exam_session_id: result.exam_session_id === undefined ? null : asNumber(result.exam_session_id),
+    session_title: sessionTitle || null,
+    total_score: result.total_score as AttemptResult["total_score"],
+    correct_count: result.correct_count === undefined ? null : asNumber(result.correct_count),
+    wrong_count: result.wrong_count === undefined ? null : asNumber(result.wrong_count),
+    unanswered_count: result.unanswered_count === undefined ? null : asNumber(result.unanswered_count),
+    show_result: showResult,
+    show_result_to_user: showResult,
+    status: asString(result.status ?? raw.status, "") || null,
+    submitted_at: asString(result.submitted_at ?? metadata.submitted_at ?? raw.submitted_at, "") || null,
+    created_at: asString(result.created_at ?? metadata.submitted_at ?? raw.submitted_at, "") || null,
+    exam_session:
+      result.exam_session && typeof result.exam_session === "object"
+        ? (result.exam_session as ExamSession)
+        : sessionTitle
+          ? { id: asNumber(result.exam_session_id), title: sessionTitle }
+          : null,
+  };
+}
+
+function normalizeExamResult(rawValue: unknown): ExamResult {
+  const result = normalizeResult(rawValue);
+
+  return {
+    id: result.id ?? result.attempt_id,
+    exam_attempt_id: result.exam_attempt_id,
+    exam_session_id: result.exam_session_id,
+    session_title: result.session_title,
+    total_score: result.total_score,
+    correct_count: result.correct_count,
+    wrong_count: result.wrong_count,
+    unanswered_count: result.unanswered_count,
+    published_at: asString(asRecord(rawValue).published_at, "") || null,
+    created_at: result.created_at,
+    submitted_at: result.submitted_at,
+    show_result_to_user: result.show_result_to_user,
+    status: result.status,
+    exam_session: result.exam_session,
+  };
+}
+
+function normalizePaginated<T>(rawValue: unknown, mapper: (item: unknown) => T): PaginatedData<T> {
+  const raw = asRecord(rawValue);
+  const items = Array.isArray(raw.data) ? raw.data : Array.isArray(rawValue) ? rawValue : [];
+  const meta = asRecord(raw.meta);
+
+  return {
+    data: items.map(mapper),
+    current_page: asNumber(raw.current_page ?? meta.current_page, 1),
+    last_page: asNumber(raw.last_page ?? meta.last_page, 1),
+    per_page: asNumber(raw.per_page ?? meta.per_page, items.length),
+    total: asNumber(raw.total ?? meta.total, items.length),
+  };
+}
 
 export function loginParticipant(email: string, password: string) {
   return api.post<LoginResponse>("/login", { email, password }, { auth: false });
@@ -38,19 +186,9 @@ export function registerParticipant(payload: RegisterPayload) {
   return api.post<RegisterResponse>("/register", payload, { auth: false });
 }
 
-// ─── Payment Proof ───────────────────────────────────────────────────────────
-
 export function uploadPaymentProof(payload: PaymentProofPayload) {
   const formData = new FormData();
   formData.set("file", payload.file);
-
-  if (payload.amount) {
-    formData.set("amount", payload.amount);
-  }
-
-  if (payload.payment_date) {
-    formData.set("payment_date", payload.payment_date);
-  }
 
   return api.post<PaymentProof>("/payment-proofs", formData);
 }
@@ -58,8 +196,6 @@ export function uploadPaymentProof(payload: PaymentProofPayload) {
 export function getPaymentProofs() {
   return api.get<PaginatedData<PaymentProof>>("/payment-proofs");
 }
-
-// ─── Participant Data ─────────────────────────────────────────────────────────
 
 export function getMyProfile() {
   return api.get<AuthUser>("/my/profile");
@@ -78,27 +214,29 @@ export function getActiveAttempt() {
 }
 
 export function getMyResults() {
-  return api.get<PaginatedData<ExamResult>>("/my/results");
+  return api
+    .get<unknown>("/my/results")
+    .then((response) => normalizePaginated(response, normalizeExamResult));
 }
 
-// ─── Exam Engine ──────────────────────────────────────────────────────────────
-
-/** Mulai ujian baru — membuat attempt baru di backend */
 export function startExam(sessionId: number) {
-  return api.post<StartExamResponse>(`/exam-sessions/${sessionId}/start`);
+  return api
+    .post<unknown>(`/exam-sessions/${sessionId}/start`)
+    .then(normalizeStartResponse);
 }
 
-/** Resume attempt yang sedang aktif */
 export function resumeExam(attemptId: number) {
-  return api.get<StartExamResponse>(`/exam-attempts/${attemptId}/resume`);
+  return api
+    .get<unknown>(`/exam-attempts/${attemptId}/resume`)
+    .then(normalizeStartResponse);
 }
 
-/** Ambil soal berdasarkan nomor */
 export function getQuestion(attemptId: number, questionNumber: number) {
-  return api.get<Question>(`/exam-attempts/${attemptId}/questions/${questionNumber}`);
+  return api
+    .get<unknown>(`/exam-attempts/${attemptId}/questions/${questionNumber}`)
+    .then(normalizeQuestion);
 }
 
-/** Simpan jawaban — question_id adalah exam_attempt_questions.id, selected_option_id adalah question_options.id */
 export function saveAnswer(
   attemptId: number,
   questionId: number,
@@ -110,7 +248,6 @@ export function saveAnswer(
   });
 }
 
-/** Toggle ragu-ragu — question_id adalah exam_attempt_questions.id */
 export function markDoubtful(attemptId: number, questionId: number, isDoubtful: boolean) {
   return api.post<null>(`/exam-attempts/${attemptId}/mark-doubt`, {
     question_id: questionId,
@@ -118,47 +255,54 @@ export function markDoubtful(attemptId: number, questionId: number, isDoubtful: 
   });
 }
 
-/** Navigasi ke nomor soal tertentu */
 export function navigateQuestion(attemptId: number, targetNumber: number) {
   return api.post<null>(`/exam-attempts/${attemptId}/navigate`, {
     question_number: targetNumber,
   });
 }
 
-/** Kirim heartbeat timer — kembalikan sisa waktu terkini */
 export function sendHeartbeat(attemptId: number) {
   return api.post<HeartbeatResponse>(`/exam-attempts/${attemptId}/heartbeat`);
 }
 
-/** Log pelanggaran anti-cheat */
 export function logViolation(attemptId: number, payload: ViolationPayload) {
   return api.post<null>(`/exam-attempts/${attemptId}/violations`, payload);
 }
 
-/** Log pemutaran audio dan cek apakah masih diizinkan */
-export function logAudioPlay(attemptId: number, questionNumber: number) {
-  return api.post<AudioPlayResponse>(`/exam-attempts/${attemptId}/audio-play`, {
-    question_number: questionNumber,
-  });
+export function logAudioPlay(attemptId: number, questionId: number) {
+  return api
+    .post<unknown>(`/exam-attempts/${attemptId}/audio-play`, {
+      question_id: questionId,
+    })
+    .then((response): AudioPlayResponse => {
+      const raw = asRecord(response);
+
+      return {
+        allowed: Boolean(raw.allowed),
+        play_count: asNumber(raw.play_count),
+        max_play: asNumber(raw.max_play ?? raw.max_play_count, 1),
+      };
+    });
 }
 
-/** Submit ujian secara final */
 export function submitExam(attemptId: number) {
-  return api.post<AttemptResult>(`/exam-attempts/${attemptId}/submit`);
+  return api
+    .post<unknown>(`/exam-attempts/${attemptId}/submit`)
+    .then(normalizeResult);
 }
 
-/** Ambil hasil satu attempt */
 export function getAttemptResult(attemptId: number) {
-  return api.get<AttemptResult>(`/exam-attempts/${attemptId}/result`);
+  return api
+    .get<unknown>(`/exam-attempts/${attemptId}/result`)
+    .then(normalizeResult);
 }
 
-/** Riwayat semua hasil ujian peserta */
 export function getResultHistory() {
-  return api.get<PaginatedData<ExamResult>>("/my/results");
+  return api
+    .get<unknown>("/my/results")
+    .then((response) => normalizePaginated(response, normalizeExamResult));
 }
 
-/** Ambil global exam settings — fallback di-handle caller */
 export function getExamSettings() {
   return api.get<ExamSettings>("/settings/exam");
 }
-

@@ -90,25 +90,9 @@ export default function ScoreDetailPage() {
                 )}
               </div>
 
-              {/* Score breakdown */}
-              <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                <div className="info-box">
-                  <small>Listening</small>
-                  <strong className="text-3xl">{result?.listening_score ?? "-"}</strong>
-                </div>
-                <div className="info-box">
-                  <small>Structure</small>
-                  <strong className="text-3xl">{result?.structure_score ?? "-"}</strong>
-                </div>
-                <div className="info-box">
-                  <small>Reading</small>
-                  <strong className="text-3xl">{result?.reading_score ?? "-"}</strong>
-                </div>
-              </div>
-
               {/* Answer stats if available */}
               {(result?.correct_count != null || result?.wrong_count != null) ? (
-                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <div className="mt-8 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-xl bg-emerald-50 p-4 text-center">
                     <p className="text-xs font-bold text-emerald-700">Benar</p>
                     <p className="text-2xl font-extrabold text-emerald-700">
