@@ -86,7 +86,7 @@ test.describe("Auth Redirect — User Sudah Login", () => {
     await page.goto("/waiting-approval");
     await page.waitForLoadState("networkidle").catch(() => {});
     // waiting-approval adalah public path — tidak redirect ke login
-    await expect(page).not.toHaveURL(/^http:\/\/localhost:3000\/login/);
+    await expect(page).not.toHaveURL(/\/login(?:$|\?)/);
     await expect(page.locator("body")).not.toBeEmpty();
   });
 });

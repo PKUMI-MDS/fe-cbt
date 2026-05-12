@@ -10,13 +10,15 @@ import { test, expect } from "@playwright/test";
 
 import type { Page } from "@playwright/test";
 
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3000";
+
 /** Bersihkan localStorage & cookie (simulasi logout penuh) */
 export async function clearSession(page: Page) {
   // Clear cookies dulu (bisa di state apa pun)
   await page.context().clearCookies();
   // Navigate ke root agar localStorage bisa diakses (tidak SecurityError di about:blank)
   const currentUrl = page.url();
-  if (!currentUrl.startsWith("http://localhost:3000")) {
+  if (!currentUrl.startsWith(BASE_URL)) {
     await page.goto("/", { waitUntil: "domcontentloaded" });
   }
   await page.evaluate(() => {

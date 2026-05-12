@@ -93,11 +93,11 @@ test.describe("Payment Proof Page", () => {
 
     // Form upload fields
     await expect(page.locator('input[type="file"]')).toBeVisible();
-    await expect(page.locator('input[name="amount"]')).toBeVisible();
-    await expect(page.locator('input[name="payment_date"]')).toBeVisible();
+    await expect(page.locator('input[name="amount"]')).toHaveCount(0);
+    await expect(page.locator('input[name="payment_date"]')).toHaveCount(0);
   });
 
-  test("payment-proof — file size > 2MB ditolak secara client-side", async ({ page }) => {
+  test("payment-proof — file size > 5MB ditolak secara client-side", async ({ page }) => {
     await page.goto("/payment-proof");
     const url = page.url();
     if (url.includes("login")) {
@@ -107,11 +107,11 @@ test.describe("Payment Proof Page", () => {
 
     // Inject file besar ke input file
     const fileInput = page.locator('input[type="file"]');
-    // Buat file 3MB secara programatik
+    // Buat file 6MB secara programatik
     await page.evaluate(() => {
       const input = document.querySelector('input[type="file"]') as HTMLInputElement;
       if (!input) return;
-      const bytes = new Uint8Array(3 * 1024 * 1024); // 3MB
+      const bytes = new Uint8Array(6 * 1024 * 1024); // 6MB
       const file = new File([bytes], "big-file.jpg", { type: "image/jpeg" });
       const dt = new DataTransfer();
       dt.items.add(file);
@@ -119,9 +119,9 @@ test.describe("Payment Proof Page", () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
     });
 
-    // Error size > 2MB harus tampil
+    // Error size > 5MB harus tampil
     const sizeError = await page
-      .locator("text=/ukuran|2 mb|2mb|terlalu besar/i")
+      .locator("text=/ukuran|5 mb|5mb|terlalu besar/i")
       .first()
       .isVisible({ timeout: 3_000 })
       .catch(() => false);

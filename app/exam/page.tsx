@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Play } from "lucide-react";
 import Toast from "@/components/Toast";
 import AuthGuard from "@/components/AuthGuard";
+import ExamHeader from "@/components/exam/ExamHeader";
 import { ApiError } from "@/lib/api";
 import {
   getActiveAttempt,
@@ -77,6 +78,7 @@ export default function ExamPage() {
     async function initExam() {
       try {
         let id: number | null = attemptIdParam ? Number(attemptIdParam) : null;
+        let initialQuestionNumber = 1;
 
         if (!id) {
           const active = await getActiveAttempt();
@@ -88,7 +90,8 @@ export default function ExamPage() {
           id = active.attempt.id;
           setRemainingSeconds(active.attempt.remaining_seconds ?? 0);
           setTotalQuestions(active.attempt.total_questions ?? 0);
-          setCurrentNumber(active.attempt.current_question_number ?? 1);
+          initialQuestionNumber = active.attempt.current_question_number ?? 1;
+          setCurrentNumber(initialQuestionNumber);
         } else {
           // attempt_id dari URL: WAJIB fetch remaining_seconds dari backend
           // agar timer tidak mulai dari 0 dan langsung auto-submit!
@@ -97,7 +100,8 @@ export default function ExamPage() {
             if (active && active.attempt.id === id) {
               setRemainingSeconds(active.attempt.remaining_seconds ?? 1800);
               setTotalQuestions(active.attempt.total_questions ?? 0);
-              setCurrentNumber(active.attempt.current_question_number ?? 1);
+              initialQuestionNumber = active.attempt.current_question_number ?? 1;
+              setCurrentNumber(initialQuestionNumber);
             } else {
               // Fallback: heartbeat untuk dapat remaining_seconds
               const hb = await sendHeartbeat(id);
@@ -109,16 +113,16 @@ export default function ExamPage() {
         }
 
         setAttemptId(id);
-        const q = await getQuestion(id, currentNumber);
+        const q = await getQuestion(id, initialQuestionNumber);
         setCurrentQ(q);
         if (q.total) setTotalQuestions(q.total);
 
         // Restore answered from question's selected_option_id
         if (q.selected_option_id) {
-          setAnsweredMap((prev) => ({ ...prev, [currentNumber]: q.selected_option_id! }));
+          setAnsweredMap((prev) => ({ ...prev, [initialQuestionNumber]: q.selected_option_id! }));
         }
         if (q.is_doubtful) {
-          setDoubtfulSet((prev) => new Set(prev).add(currentNumber));
+          setDoubtfulSet((prev) => new Set(prev).add(initialQuestionNumber));
         }
 
         // Load exam settings (dynamic limits, auto-submit, etc.)
@@ -135,25 +139,7 @@ export default function ExamPage() {
       }
     }
     void initExam();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Timer countdown — guard: jangan mulai jika remainingSeconds belum di-fetch (masih 0)
-  useEffect(() => {
-    if (!attemptId || isLoading || remainingSeconds <= 0) return;
-    timerRef.current = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          void handleSubmitFinal(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timerRef.current!);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [attemptId, isLoading, remainingSeconds > 0]);
+  }, [attemptIdParam]);
 
   // Heartbeat
   useEffect(() => {
@@ -346,9 +332,14 @@ export default function ExamPage() {
   }, [attemptId, currentQ, currentNumber, doubtfulSet]);
 
   const handlePlayAudio = useCallback(async () => {
-      if (!attemptId || !currentQ) return;
-      try {
-      const result = await logAudioPlay(attemptId, currentQ.question_id ?? currentQ.id);
+    if (!attemptId || !currentQ) return;
+    if (!currentQ.question_id) {
+      setToast("Gagal memutar audio: ID soal tidak tersedia dari server.");
+      return;
+    }
+
+    try {
+      const result = await logAudioPlay(attemptId, currentQ.question_id);
       if (!result.allowed) {
         setToast(`Batas putar audio (${result.max_play}x) sudah tercapai`);
         return;
@@ -388,6 +379,29 @@ export default function ExamPage() {
     },
     [attemptId, router]
   );
+
+  const hasActiveTimer = remainingSeconds > 0;
+
+  // Timer countdown: start only after backend remaining_seconds has been loaded.
+  useEffect(() => {
+    if (!attemptId || isLoading || !hasActiveTimer) return;
+
+    timerRef.current = setInterval(() => {
+      setRemainingSeconds((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          void handleSubmitFinal(true);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [attemptId, isLoading, hasActiveTimer, handleSubmitFinal]);
 
   // Watch for auto-submit trigger
   useEffect(() => {
@@ -459,46 +473,14 @@ export default function ExamPage() {
 
       <section className="min-h-screen bg-slate-100">
         {/* Sticky Header */}
-        <div className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
-          <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
-            <div>
-              <p className="text-xs font-bold uppercase text-slate-400">
-                {currentQ?.section_type ?? currentQ?.section ?? "Ujian"}
-              </p>
-              <h1 className="text-base font-extrabold text-slate-950">
-                Soal <span>{currentNumber}</span> dari {totalQuestions}
-              </h1>
-            </div>
-            <div className="flex items-center gap-3">
-              <span
-                className={`hidden rounded-full px-3 py-1 text-xs font-bold sm:inline-flex ${
-                  saveState === "Saved"
-                    ? "bg-emerald-50 text-emerald-700"
-                    : saveState === "Saving..."
-                    ? "bg-amber-50 text-amber-700"
-                    : "bg-rose-50 text-rose-700"
-                }`}
-              >
-                {saveState}
-              </span>
-              <span
-                className={`rounded-xl px-4 py-2 font-mono text-sm font-extrabold ${
-                  remainingSeconds < 300 ? "bg-rose-50 text-rose-700" : "bg-slate-100 text-slate-700"
-                }`}
-              >
-                {formatTime(remainingSeconds)}
-              </span>
-              <button
-                type="button"
-                aria-label="Selesai Ujian"
-                onClick={() => setShowModal(true)}
-                className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800 transition focus:outline-none focus:ring-4 focus:ring-slate-400"
-              >
-                Selesai
-              </button>
-            </div>
-          </div>
-        </div>
+        <ExamHeader
+          currentQuestion={currentQ}
+          currentNumber={currentNumber}
+          totalQuestions={totalQuestions}
+          remainingTime={formatTime(remainingSeconds)}
+          saveState={saveState}
+          onOpenSubmit={() => setShowModal(true)}
+        />
 
         <div className="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[1fr_320px] lg:px-8">
           {/* Main Content */}

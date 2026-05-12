@@ -138,7 +138,7 @@ test.describe("Waiting Approval Page", () => {
     await page.goto("/waiting-approval");
     await page.waitForLoadState("networkidle").catch(() => {});
     // waiting-approval adalah PUBLIC di middleware — tidak redirect ke login
-    await expect(page).not.toHaveURL(/^http:\/\/localhost:3000\/login/);
+    await expect(page).not.toHaveURL(/\/login(?:$|\?)/);
     await expect(page.locator("body")).not.toBeEmpty();
   });
 
