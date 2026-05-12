@@ -9,7 +9,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/panduan", label: "Panduan" },
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/exam/history", label: "History" },
+  { href: "/exam/history", label: "History", authOnly: true },
 ];
 
 export default function Header() {
@@ -30,11 +30,13 @@ export default function Header() {
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
-          {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${pathname === link.href ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-brand-50 hover:text-brand-700"}`}>
-              {link.label}
-            </Link>
-          ))}
+          {navLinks
+            .filter((link) => !link.authOnly || isAuthenticated)
+            .map((link) => (
+              <Link key={link.href} href={link.href} className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${pathname === link.href ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-brand-50 hover:text-brand-700"}`}>
+                {link.label}
+              </Link>
+            ))}
         </nav>
 
         {isAuthenticated ? (
