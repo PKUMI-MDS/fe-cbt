@@ -32,7 +32,7 @@ export default function RegisterForm() {
 
     const nextFieldErrors: Record<string, string> = {};
 
-    if (!/^\d{11,13}$/.test(payload.phone)) {
+    if (!/^\d{11,13}$/.test(payload.phone || "")) {
       nextFieldErrors.phone = "No. WhatsApp harus 11-13 digit angka.";
     }
 
