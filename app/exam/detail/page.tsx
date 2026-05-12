@@ -10,13 +10,51 @@ import { ApiError } from "@/lib/api";
 import { getMyExamSessions } from "@/lib/auth-api";
 import type { ExamSession, ExamSessionRegistration } from "@/lib/types";
 
-function formatDateTime(date?: string | null, time?: string | null) {
-  const value = date ?? time;
-  if (!value) return "-";
-  return new Intl.DateTimeFormat("id-ID", {
-    dateStyle: "long",
-    timeStyle: time ? "short" : undefined,
-  }).format(new Date(value));
+/**
+ * Format jadwal sesi ujian.
+ * session_date: "YYYY-MM-DD" → diparse sebagai local date
+ * start_time: "HH:mm" dari backend (waktu lokal WIB) → ditampilkan langsung
+ */
+function extractTime(val?: string | null): string {
+  if (!val) return "";
+  // Plain "HH:mm" or "HH:mm:ss" — new backend format, already WIB
+  const plain = val.match(/^(\d{2}:\d{2})(?::\d{2})?$/);
+  if (plain) return plain[1];
+  // ISO datetime: extract HH:mm directly after 'T' (no TZ conversion).
+  // Time is stored as local WIB; UTC label is a VPS timezone misconfiguration.
+  const isoMatch = val.match(/T(\d{2}:\d{2})/);
+  if (isoMatch) return isoMatch[1];
+  return val;
+}
+
+function formatSessionSchedule(
+  sessionDate?: string | null,
+  startTime?: string | null,
+  endTime?: string | null,
+): string {
+  if (!sessionDate && !startTime) return "-";
+  let datePart = "";
+  if (sessionDate) {
+    const m = sessionDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      datePart = new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(
+        new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])),
+      );
+    } else {
+      try {
+        datePart = new Intl.DateTimeFormat("id-ID", {
+          dateStyle: "long",
+          timeZone: "Asia/Jakarta",
+        }).format(new Date(sessionDate));
+      } catch { datePart = sessionDate; }
+    }
+  }
+  const start = extractTime(startTime);
+  const end = extractTime(endTime);
+  if (!datePart && !start) return "-";
+  if (!start) return datePart || "-";
+  const timePart = end ? `${start} – ${end} WIB` : `${start} WIB`;
+  return datePart ? `${datePart}, ${timePart}` : timePart;
 }
 
 export default function ExamDetailPage() {
@@ -103,7 +141,7 @@ export default function ExamDetailPage() {
                 </div>
                 <div className="info-box">
                   <small>Jadwal</small>
-                  <strong>{formatDateTime(session?.session_date, session?.start_time)}</strong>
+                  <strong>{formatSessionSchedule(session?.session_date, session?.start_time, session?.end_time)}</strong>
                 </div>
                 <div className="info-box">
                   <small>Status Sesi</small>

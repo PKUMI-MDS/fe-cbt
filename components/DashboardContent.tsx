@@ -23,6 +23,66 @@ function formatDateTime(date?: string | null, fallback?: string | null) {
   }).format(new Date(value));
 }
 
+/**
+ * Extract "HH:mm" dari berbagai format waktu:
+ * - "HH:mm" atau "HH:mm:ss" → langsung ambil (format baru dari backend fix)
+ * - ISO datetime string ("2026-12-05T01:30:00+00:00" atau "...Z") →
+ *   Ambil HH:mm LANGSUNG dari string (tanpa konversi timezone!), karena
+ *   waktu di DB disimpan sebagai WIB lokal, bukan UTC.
+ */
+function extractTime(val?: string | null): string {
+  if (!val) return "";
+  // Plain time: "01:30" or "01:30:00" — already correct WIB (new backend format)
+  const plain = val.match(/^(\d{2}:\d{2})(?::\d{2})?$/);
+  if (plain) return plain[1];
+  // ISO datetime: "2026-12-05T01:30:00+00:00" or "...Z" or "...+07:00"
+  // Extract HH:mm DIRECTLY from the string (position after 'T').
+  // The stored value is local WIB time; the UTC label is incorrect (VPS bug).
+  const isoMatch = val.match(/T(\d{2}:\d{2})/);
+  if (isoMatch) return isoMatch[1];
+  return val;
+}
+
+/**
+ * Format jadwal sesi: tampilkan "13 Mei 2026, 00:38 – 00:50 WIB".
+ * Handle format lama (ISO UTC dari VPS) dan format baru ("YYYY-MM-DD" + "HH:mm").
+ */
+function formatSessionSchedule(
+  sessionDate?: string | null,
+  startTime?: string | null,
+  endTime?: string | null,
+): string {
+  if (!sessionDate && !startTime) return "-";
+
+  let datePart = "";
+  if (sessionDate) {
+    // Plain "YYYY-MM-DD" — parse as local date (no UTC shift)
+    const plainMatch = sessionDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (plainMatch) {
+      const [, y, m, d] = plainMatch;
+      datePart = new Intl.DateTimeFormat("id-ID", { dateStyle: "long" }).format(
+        new Date(Number(y), Number(m) - 1, Number(d)),
+      );
+    } else {
+      // Fallback: format as date in WIB
+      try {
+        datePart = new Intl.DateTimeFormat("id-ID", {
+          dateStyle: "long",
+          timeZone: "Asia/Jakarta",
+        }).format(new Date(sessionDate));
+      } catch { datePart = sessionDate; }
+    }
+  }
+
+  const start = extractTime(startTime);
+  const end = extractTime(endTime);
+
+  if (!datePart && !start) return "-";
+  if (!start) return datePart || "-";
+  const timePart = end ? `${start} – ${end} WIB` : `${start} WIB`;
+  return datePart ? `${datePart}, ${timePart}` : timePart;
+}
+
 function statusText(status?: string | null) {
   const labels: Record<string, string> = {
     active: "Aktif",
@@ -147,7 +207,7 @@ export default function DashboardContent() {
                       <div className="mt-5 grid gap-3 sm:grid-cols-3">
                         <div className="info-box">
                           <small>Jadwal</small>
-                          <strong>{formatDateTime(session?.start_time, session?.session_date)}</strong>
+                          <strong>{formatSessionSchedule(session?.session_date, session?.start_time, session?.end_time)}</strong>
                         </div>
                         <div className="info-box">
                           <small>Status Sesi</small>
