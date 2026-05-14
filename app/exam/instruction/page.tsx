@@ -44,10 +44,6 @@ export default function ExamInstructionPage() {
   }, [sessionId]);
 
   const handleStart = () => {
-    if (!agreed) {
-      setToast("Centang persetujuan instruksi dulu");
-      return;
-    }
     setShowModal(true);
   };
 
@@ -151,7 +147,12 @@ export default function ExamInstructionPage() {
               <a href={detailHref} className="btn-secondary">
                 Kembali
               </a>
-              <button type="button" onClick={handleStart} className="btn-primary">
+              <button
+                type="button"
+                onClick={handleStart}
+                disabled={!agreed}
+                className={`btn-primary ${!agreed ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
                 Mulai Ujian
               </button>
             </div>
