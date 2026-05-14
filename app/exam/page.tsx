@@ -164,6 +164,15 @@ export default function ExamPage() {
     async (autoSubmit = false) => {
       if (!attemptId) return;
       setIsSubmitting(true);
+
+      // Hapus beforeunload agar tidak muncul dialog "Leave page"
+      window.onbeforeunload = null;
+
+      // Keluar fullscreen jika masih aktif
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+
       try {
         const result = await submitExam(attemptId);
         setSubmitResult(result);
@@ -171,25 +180,18 @@ export default function ExamPage() {
         clearInterval(heartbeatRef.current!);
 
         if (autoSubmit) {
-          // Pelanggaran → paksa ke dashboard (full reload agar keluar fullscreen)
           window.location.href = "/dashboard";
         } else {
-          router.push(
-            `/exam/completed?attempt_id=${attemptId}&show_result=${result.show_result ?? false}`
-          );
+          window.location.href = `/exam/completed?attempt_id=${attemptId}&show_result=${result.show_result ?? false}`;
         }
-      } catch (err) {
-        if (autoSubmit) {
-          // Tetap redirect ke dashboard meskipun submit gagal (ujian mungkin sudah ter-submit)
-          window.location.href = "/dashboard";
-        } else {
-          setToast(err instanceof ApiError ? err.message : "Gagal submit ujian.");
-          setIsSubmitting(false);
-          setShowModal(false);
-        }
+      } catch {
+        // Tetap redirect — ujian sudah ter-submit atau error lain
+        clearInterval(timerRef.current!);
+        clearInterval(heartbeatRef.current!);
+        window.location.href = autoSubmit ? "/dashboard" : "/dashboard";
       }
     },
-    [attemptId, router]
+    [attemptId]
   );
 
   const handleViolation = useCallback(
