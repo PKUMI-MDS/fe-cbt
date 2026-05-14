@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Phone, Building2, ShieldCheck, Mail, MapPin, Pencil, CheckCircle } from "lucide-react";
+import { Phone, Building2, ShieldCheck, MapPin, Pencil } from "lucide-react";
 import { getMyProfile, updateProfile } from "@/lib/auth-api";
 import ProfileSkeleton from "@/components/ProfileSkeleton";
 
