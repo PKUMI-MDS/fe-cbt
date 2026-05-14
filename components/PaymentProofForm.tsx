@@ -81,6 +81,37 @@ export default function PaymentProofForm() {
     void loadHistory();
   }, []);
 
+  // Auto-polling: cek status setiap 15 detik
+  // Jika ada yang berubah ke approved → redirect ke dashboard
+  useEffect(() => {
+    const hasPending = proofs.some((p) => p.status === "pending_review");
+    if (!hasPending || isLoadingHistory) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await getPaymentProofs();
+        const latest = response.data ?? [];
+        setProofs(latest);
+
+        // Cek apakah ada yang baru approved
+        const newlyApproved = latest.some(
+          (item) =>
+            item.status === "approved" &&
+            proofs.find((old) => old.id === item.id)?.status !== "approved"
+        );
+
+        if (newlyApproved) {
+          clearInterval(interval);
+          window.location.href = "/dashboard";
+        }
+      } catch {
+        // silent fail
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [proofs, isLoadingHistory]);
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -128,9 +159,32 @@ export default function PaymentProofForm() {
   }
 
   const hasRejected = proofs.some((p) => p.status === "rejected");
+  const hasApproved = proofs.some((p) => p.status === "approved");
 
   return (
     <div className="space-y-5">
+      {/* Approved Banner */}
+      {hasApproved ? (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+            <div>
+              <p className="text-sm font-bold text-emerald-800">
+                Pembayaran Anda sudah disetujui!
+              </p>
+              <p className="mt-1 text-sm text-emerald-700">
+                Anda sudah bisa mengerjakan ujian. Kembali ke dashboard untuk melihat sesi ujian yang tersedia.
+              </p>
+              <Link
+                href="/dashboard"
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 transition"
+              >
+                Ke Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {/* Upload Form */}
       <form id="payment-proof-form" className="panel" onSubmit={handleSubmit}>
         <div className="flex items-center gap-3">
