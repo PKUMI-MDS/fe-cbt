@@ -89,7 +89,7 @@ export default function PaymentProofForm() {
     void loadHistory();
   }, []);
 
-  // Auto-polling: cek status setiap 15 detik
+  // Auto-polling: cek status setiap 5 detik
   // Jika ada yang berubah ke approved → redirect ke dashboard
   useEffect(() => {
     const hasPending = proofs.some((p) => p.status === "pending_review");
@@ -115,7 +115,7 @@ export default function PaymentProofForm() {
       } catch {
         // silent fail
       }
-    }, 15000);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, [proofs, isLoadingHistory]);
