@@ -137,6 +137,7 @@ export default function DashboardContent() {
         results: results.data ?? [],
       };
     },
+    refetchInterval: 3000, // Auto-refresh setiap 3 detik
   });
 
   const activeApprovals = useMemo(
