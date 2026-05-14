@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { getCurrentUser, logoutParticipant } from "@/lib/auth-api";
 import { clearAuthToken, getAuthToken, setAuthToken } from "@/lib/auth";
 import type { AuthUser } from "@/lib/types";
@@ -9,7 +8,6 @@ import type { AuthUser } from "@/lib/types";
 type SessionStatus = "loading" | "authenticated" | "unauthenticated";
 
 export function useAuthSession() {
-  const router = useRouter();
   const [status, setStatus] = useState<SessionStatus>("loading");
   const [user, setUser] = useState<AuthUser | null>(null);
 
@@ -56,9 +54,10 @@ export function useAuthSession() {
       clearAuthToken();
       setUser(null);
       setStatus("unauthenticated");
-      router.push("/login");
+      // Full page redirect agar semua komponen re-initialize
+      window.location.href = "/login";
     }
-  }, [router]);
+  }, []);
 
   return {
     isAuthenticated: status === "authenticated",
