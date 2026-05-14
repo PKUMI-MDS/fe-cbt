@@ -169,9 +169,16 @@ export default function ExamPage() {
         setSubmitResult(result);
         clearInterval(timerRef.current!);
         clearInterval(heartbeatRef.current!);
-        router.push(
-          `/exam/completed?attempt_id=${attemptId}&show_result=${result.show_result ?? false}`
-        );
+
+        if (autoSubmit) {
+          // Pelanggaran → langsung ke dashboard
+          router.push("/dashboard");
+        } else {
+          // Submit manual → ke halaman completed
+          router.push(
+            `/exam/completed?attempt_id=${attemptId}&show_result=${result.show_result ?? false}`
+          );
+        }
       } catch (err) {
         if (!autoSubmit) {
           setToast(err instanceof ApiError ? err.message : "Gagal submit ujian.");
