@@ -146,7 +146,12 @@ export default function WaitingApprovalStatus() {
         </div>
         <div>
           <small>Bukti Bayar</small>
-          <strong className="text-slate-500">Cek di menu pembayaran</strong>
+          <Link
+            href="/payment-proof"
+            className="inline-flex items-center gap-1 font-bold text-brand-600 hover:text-brand-700 hover:underline transition"
+          >
+            Upload / Cek Status
+          </Link>
         </div>
       </div>
 

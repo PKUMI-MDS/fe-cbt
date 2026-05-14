@@ -20,7 +20,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    if (status === "authenticated" && user?.account_status !== "active" && pathname !== "/waiting-approval") {
+    const allowedForPending = pathname === "/waiting-approval" || pathname === "/payment-proof" || pathname.startsWith("/payment-proof/");
+    if (status === "authenticated" && user?.account_status !== "active" && !allowedForPending) {
       router.replace("/waiting-approval");
     }
   }, [logout, pathname, router, status, user?.account_status, user?.role]);
@@ -43,7 +44,8 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
     return null;
   }
 
-  if (user?.account_status !== "active" && pathname !== "/waiting-approval") {
+  const allowedForPending = pathname === "/waiting-approval" || pathname === "/payment-proof" || pathname.startsWith("/payment-proof/");
+  if (user?.account_status !== "active" && !allowedForPending) {
     return null;
   }
 

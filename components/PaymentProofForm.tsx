@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { ApiError } from "@/lib/api";
 import { getPaymentProofs, uploadPaymentProof } from "@/lib/auth-api";
 import type { PaymentProof } from "@/lib/types";
@@ -8,6 +9,7 @@ import {
   AlertTriangle,
   CheckCircle,
   Clock,
+  Eye,
   FileText,
   Upload,
   XCircle,
@@ -220,9 +222,10 @@ export default function PaymentProofForm() {
               const cfg = statusConfig(proof.status);
               const StatusIcon = cfg.icon;
               return (
-                <div
+                <Link
                   key={proof.id}
-                  className={`rounded-xl border p-4 transition ${cfg.cardClass}`}
+                  href={`/payment-proof/${proof.id}`}
+                  className={`block rounded-xl border p-4 transition hover:shadow-sm ${cfg.cardClass}`}
                 >
                   <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
                     <div className="min-w-0">
@@ -259,20 +262,22 @@ export default function PaymentProofForm() {
                   ) : null}
 
                   {proof.status === "rejected" ? (
-                    <button
-                      type="button"
-                      onClick={() => {
+                    <span
+                      role="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         const formEl =
                           document.getElementById("payment-proof-form");
                         formEl?.scrollIntoView({ behavior: "smooth" });
                       }}
-                      className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-50 transition"
+                      className="mt-3 inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-rose-200 bg-white px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-50 transition"
                     >
                       <Upload className="h-4 w-4" />
                       Upload Ulang
-                    </button>
+                    </span>
                   ) : null}
-                </div>
+                </Link>
               );
             })}
           </div>

@@ -200,6 +200,10 @@ export function getPaymentProofs() {
   return api.get<PaginatedData<PaymentProof>>("/payment-proofs");
 }
 
+export function getPaymentProof(id: number | string) {
+  return api.get<PaymentProof>(`/payment-proofs/${id}`);
+}
+
 export function getMyProfile() {
   return api.get<AuthUser>("/my/profile");
 }

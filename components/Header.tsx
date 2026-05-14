@@ -9,6 +9,7 @@ const navLinks = [
   { href: "/", label: "Home" },
   { href: "/panduan", label: "Panduan" },
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/payment-proof", label: "Pembayaran", authOnly: true },
   { href: "/exam/history", label: "History", authOnly: true },
 ];
 
