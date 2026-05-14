@@ -64,11 +64,12 @@ export default function ExamPage() {
 
   // P1: Exam Reliability States
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const [tabSwitchCount, setTabSwitchCount] = useState(0);
-  const [fullscreenExitCount, setFullscreenExitCount] = useState(0);
+  const [violationCount, setViolationCount] = useState(0);
   const [showViolationModal, setShowViolationModal] = useState(false);
+  const [violationMessage, setViolationMessage] = useState("");
   const [examSettings, setExamSettings] = useState<ExamSettings>(DEFAULT_EXAM_SETTINGS);
-  const shouldAutoSubmitRef = useRef(false);
+  const isAutoSubmittingRef = useRef(false);
+  const violationCountRef = useRef(0);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -159,45 +160,72 @@ export default function ExamPage() {
     return () => clearInterval(heartbeatRef.current!);
   }, [attemptId, isLoading, router]);
 
+  const handleSubmitFinal = useCallback(
+    async (autoSubmit = false) => {
+      if (!attemptId) return;
+      setIsSubmitting(true);
+      try {
+        const result = await submitExam(attemptId);
+        setSubmitResult(result);
+        clearInterval(timerRef.current!);
+        clearInterval(heartbeatRef.current!);
+        router.push(
+          `/exam/completed?attempt_id=${attemptId}&show_result=${result.show_result ?? false}`
+        );
+      } catch (err) {
+        if (!autoSubmit) {
+          setToast(err instanceof ApiError ? err.message : "Gagal submit ujian.");
+        }
+        setIsSubmitting(false);
+        setShowModal(false);
+      }
+    },
+    [attemptId, router]
+  );
+
   const handleViolation = useCallback(
     async (type: ViolationPayload["violation_type"], detail: string) => {
-      if (!attemptId) return;
+      if (!attemptId || isAutoSubmittingRef.current) return;
+
+      // Log ke backend
       try {
         await logViolation(attemptId, { violation_type: type, severity: "medium", detail });
       } catch {
-        // silent fail if unable to log
+        // silent fail
       }
 
-      if (type === "tab_switch") {
-        setTabSwitchCount((prev) => {
-          const next = prev + 1;
-          if (next >= examSettings.max_tab_switch) {
-            setShowViolationModal(true);
-            if (examSettings.auto_submit_on_violation_limit) {
-              shouldAutoSubmitRef.current = true;
-            }
-          }
-          return next;
-        });
-      } else if (type === "fullscreen_exit") {
-        setFullscreenExitCount((prev) => {
-          const next = prev + 1;
-          if (next >= examSettings.max_fullscreen_exit) {
-            setShowViolationModal(true);
-            if (examSettings.auto_submit_on_violation_limit) {
-              shouldAutoSubmitRef.current = true;
-            }
-          }
-          return next;
-        });
+      // Increment violation count (gunakan ref untuk nilai real-time, state untuk render)
+      violationCountRef.current += 1;
+      const currentCount = violationCountRef.current;
+      setViolationCount(currentCount);
+
+      const maxViolations = examSettings.max_tab_switch; // total max pelanggaran
+      const remaining = maxViolations - currentCount;
+
+      // Sudah mencapai limit → LANGSUNG auto-submit tanpa delay
+      if (currentCount >= maxViolations && examSettings.auto_submit_on_violation_limit) {
+        isAutoSubmittingRef.current = true;
+        setViolationMessage(`Batas pelanggaran tercapai (${maxViolations}x). Ujian disubmit otomatis.`);
+        setShowViolationModal(true);
+        // Submit langsung — tidak ada ampun
+        void handleSubmitFinal(true);
+        return;
       }
 
-      setToast(`Peringatan: ${detail}. Jangan diulangi!`);
+      // Peringatan terakhir (1 kesempatan lagi)
+      if (remaining === 1) {
+        setViolationMessage(
+          `⚠️ PERINGATAN TERAKHIR! Anda sudah melakukan ${currentCount} pelanggaran dari ${maxViolations} yang diizinkan. Satu pelanggaran lagi, ujian akan OTOMATIS DISUBMIT!`
+        );
+        setShowViolationModal(true);
+      }
+
+      setToast(`Peringatan: ${detail}. Pelanggaran ${currentCount}/${maxViolations}. Jangan diulangi!`);
     },
-    [attemptId, examSettings]
+    [attemptId, examSettings, handleSubmitFinal]
   );
 
-  // Anti-cheat & Route Guard
+  // Anti-cheat & Route Guard — MAXIMUM PROTECTION
   useEffect(() => {
     if (!attemptId || isLoading || error) return;
 
@@ -208,7 +236,7 @@ export default function ExamPage() {
       return "";
     };
 
-    // 2. Fullscreen change
+    // 2. Fullscreen change — keluar fullscreen = pelanggaran
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement) {
         setIsFullScreen(false);
@@ -218,30 +246,72 @@ export default function ExamPage() {
       }
     };
 
-    // 3. Tab switch (visibility change)
+    // 3. Tab switch (visibility change) — pindah tab = pelanggaran
     const handleVisibilityChange = () => {
       if (document.hidden) {
         handleViolation("tab_switch", "Peserta berpindah tab atau meminimalkan browser");
       }
     };
 
-    // 4. Disable right click/copy
+    // 4. Window blur — deteksi klik ke window/monitor lain (dual monitor)
+    const handleWindowBlur = () => {
+      // Hanya trigger jika document tidak hidden (artinya user klik ke window lain, bukan tab switch)
+      // Ini menangkap kasus dual monitor dimana visibilitychange tidak fire
+      if (!document.hidden) {
+        handleViolation("tab_switch", "Peserta berpindah ke jendela atau monitor lain");
+      }
+    };
+
+    // 5. Disable right click/copy/paste/select
     const preventAction = (e: Event) => {
       e.preventDefault();
     };
 
+    // 6. Disable keyboard shortcuts (Ctrl+C, Ctrl+V, Ctrl+Tab, Alt+Tab info, F12, dll)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Block: Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A, Ctrl+P, Ctrl+S, Ctrl+U
+      if (e.ctrlKey && ["c", "v", "x", "a", "p", "s", "u"].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+        return;
+      }
+      // Block: F12 (DevTools), Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C
+      if (e.key === "F12") {
+        e.preventDefault();
+        return;
+      }
+      if (e.ctrlKey && e.shiftKey && ["i", "j", "c"].includes(e.key.toLowerCase())) {
+        e.preventDefault();
+        return;
+      }
+      // Block: Alt+Tab notification (can't actually block, but detect)
+      // Block: PrintScreen
+      if (e.key === "PrintScreen") {
+        e.preventDefault();
+        handleViolation("tab_switch", "Peserta mencoba mengambil screenshot");
+      }
+    };
+
+    // 7. Detect DevTools open (resize trick)
+    const devToolsCheck = setInterval(() => {
+      const widthThreshold = window.outerWidth - window.innerWidth > 160;
+      const heightThreshold = window.outerHeight - window.innerHeight > 160;
+      if (widthThreshold || heightThreshold) {
+        handleViolation("tab_switch", "Terdeteksi Developer Tools terbuka");
+      }
+    }, 2000);
+
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("fullscreenchange", handleFullscreenChange);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    
-    // Disable right click, copy, cut, paste, selectstart
+    window.addEventListener("blur", handleWindowBlur);
+    document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("contextmenu", preventAction);
     document.addEventListener("copy", preventAction);
     document.addEventListener("cut", preventAction);
     document.addEventListener("paste", preventAction);
     document.addEventListener("selectstart", preventAction);
 
-    // Initial check in case it's somehow already fullscreen
+    // Initial check
     if (document.fullscreenElement) {
       setIsFullScreen(true);
     }
@@ -250,11 +320,14 @@ export default function ExamPage() {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("blur", handleWindowBlur);
+      document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("contextmenu", preventAction);
       document.removeEventListener("copy", preventAction);
       document.removeEventListener("cut", preventAction);
       document.removeEventListener("paste", preventAction);
       document.removeEventListener("selectstart", preventAction);
+      clearInterval(devToolsCheck);
     };
   }, [attemptId, isLoading, error, handleViolation]);
 
@@ -372,29 +445,6 @@ export default function ExamPage() {
     }
   }, [attemptId, currentQ]);
 
-  const handleSubmitFinal = useCallback(
-    async (autoSubmit = false) => {
-      if (!attemptId) return;
-      setIsSubmitting(true);
-      try {
-        const result = await submitExam(attemptId);
-        setSubmitResult(result);
-        clearInterval(timerRef.current!);
-        clearInterval(heartbeatRef.current!);
-        router.push(
-          `/exam/completed?attempt_id=${attemptId}&show_result=${result.show_result ?? false}`
-        );
-      } catch (err) {
-        if (!autoSubmit) {
-          setToast(err instanceof ApiError ? err.message : "Gagal submit ujian.");
-        }
-        setIsSubmitting(false);
-        setShowModal(false);
-      }
-    },
-    [attemptId, router]
-  );
-
   const hasActiveTimer = remainingSeconds > 0;
 
   // Timer countdown: start only after backend remaining_seconds has been loaded.
@@ -422,7 +472,11 @@ export default function ExamPage() {
   useEffect(() => {
     if (shouldAutoSubmitRef.current && attemptId) {
       shouldAutoSubmitRef.current = false;
-      void handleSubmitFinal(true);
+      // Delay 1.5 detik agar user sempat lihat modal peringatan
+      const timer = setTimeout(() => {
+        void handleSubmitFinal(true);
+      }, 1500);
+      return () => clearTimeout(timer);
     }
   }, [tabSwitchCount, fullscreenExitCount, attemptId, handleSubmitFinal]);
 
@@ -697,27 +751,30 @@ export default function ExamPage() {
         <div className="modal" role="dialog" aria-modal="true" aria-labelledby="violationTitle">
           <div className="modal-panel max-w-sm text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-100">
-              <span className="text-3xl">⚠️</span>
+              <span className="text-3xl">🚨</span>
             </div>
-            <h2 id="violationTitle" className="text-2xl font-extrabold text-slate-950">
-              Peringatan Pelanggaran
+            <h2 id="violationTitle" className="text-2xl font-extrabold text-rose-700">
+              {violationCount >= examSettings.max_tab_switch ? "UJIAN DISUBMIT OTOMATIS" : "PERINGATAN TERAKHIR"}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Anda telah melakukan pelanggaran lebih dari batas yang diizinkan
-              (tab switch: {examSettings.max_tab_switch}x, fullscreen exit: {examSettings.max_fullscreen_exit}x).
-              {examSettings.auto_submit_on_violation_limit
-                ? " Ujian akan disubmit otomatis oleh sistem."
-                : " Aktivitas ini telah dicatat. Harap kembali mengerjakan ujian dengan jujur."}
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              {violationMessage}
             </p>
-            <div className="mt-6">
-              <button
-                type="button"
-                onClick={() => setShowViolationModal(false)}
-                className="w-full rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
-              >
-                Saya Mengerti
-              </button>
+            <div className="mt-4 rounded-xl bg-rose-50 p-3">
+              <p className="text-xs font-bold text-rose-700">
+                Pelanggaran: {violationCount} / {examSettings.max_tab_switch}
+              </p>
             </div>
+            {violationCount < examSettings.max_tab_switch && (
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowViolationModal(false)}
+                  className="w-full rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
+                >
+                  Saya Mengerti, Tidak Akan Mengulangi
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
