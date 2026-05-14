@@ -171,20 +171,22 @@ export default function ExamPage() {
         clearInterval(heartbeatRef.current!);
 
         if (autoSubmit) {
-          // Pelanggaran → langsung ke dashboard
-          router.push("/dashboard");
+          // Pelanggaran → paksa ke dashboard (full reload agar keluar fullscreen)
+          window.location.href = "/dashboard";
         } else {
-          // Submit manual → ke halaman completed
           router.push(
             `/exam/completed?attempt_id=${attemptId}&show_result=${result.show_result ?? false}`
           );
         }
       } catch (err) {
-        if (!autoSubmit) {
+        if (autoSubmit) {
+          // Tetap redirect ke dashboard meskipun submit gagal (ujian mungkin sudah ter-submit)
+          window.location.href = "/dashboard";
+        } else {
           setToast(err instanceof ApiError ? err.message : "Gagal submit ujian.");
+          setIsSubmitting(false);
+          setShowModal(false);
         }
-        setIsSubmitting(false);
-        setShowModal(false);
       }
     },
     [attemptId, router]
