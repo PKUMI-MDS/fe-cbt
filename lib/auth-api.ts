@@ -9,6 +9,7 @@ import type {
   ExamSession,
   ExamSessionRegistration,
   ExamSettings,
+  ForgotPasswordPayload,
   HeartbeatResponse,
   LoginResponse,
   PaginatedData,
@@ -17,8 +18,10 @@ import type {
   Question,
   RegisterPayload,
   RegisterResponse,
+  ResetPasswordPayload,
   StartExamResponse,
   TestApproval,
+  UpdateProfilePayload,
   ViolationPayload,
 } from "@/lib/types";
 
@@ -303,6 +306,36 @@ export function getResultHistory() {
     .then((response) => normalizePaginated(response, normalizeExamResult));
 }
 
+function normalizeExamSettings(rawValue: unknown): ExamSettings {
+  const raw = asRecord(rawValue);
+
+  return {
+    auto_submit_on_violation_limit: Boolean(raw.auto_submit_on_violation_limit),
+    max_tab_switch: asNumber(raw.default_max_tab_switch ?? raw.max_tab_switch, 3),
+    max_fullscreen_exit: asNumber(raw.default_max_fullscreen_exit ?? raw.max_fullscreen_exit, 3),
+    shuffle_questions: Boolean(raw.default_shuffle_questions ?? raw.shuffle_questions),
+    shuffle_options: Boolean(raw.default_shuffle_options ?? raw.shuffle_options),
+    show_result_to_user: Boolean(raw.default_show_result_to_user ?? raw.show_result_to_user),
+  };
+}
+
 export function getExamSettings() {
-  return api.get<ExamSettings>("/settings/exam");
+  return api.get<unknown>("/settings/exam").then(normalizeExamSettings);
+}
+
+export function forgotPassword(payload: { email: string }) {
+  return api.post<null>("/forgot-password", payload, { auth: false });
+}
+
+export function resetPassword(payload: {
+  email: string;
+  token: string;
+  password: string;
+  password_confirmation: string;
+}) {
+  return api.post<null>("/reset-password", payload, { auth: false });
+}
+
+export function updateProfile(payload: Record<string, string | null>) {
+  return api.patch<AuthUser>("/my/profile", payload);
 }

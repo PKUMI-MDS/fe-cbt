@@ -220,3 +220,22 @@ export type ExamSettings = {
   shuffle_options: boolean;
   show_result_to_user: boolean;
 };
+
+export type ForgotPasswordPayload = {
+  email: string;
+};
+
+export type ResetPasswordPayload = {
+  email: string;
+  token: string;
+  password: string;
+  password_confirmation: string;
+};
+
+export type UpdateProfilePayload = {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  institution?: string | null;
+  address?: string | null;
+};

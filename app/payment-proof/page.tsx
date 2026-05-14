@@ -1,6 +1,5 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FlowNav from "@/components/FlowNav";
 import AuthGuard from "@/components/AuthGuard";
 import PaymentProofForm from "@/components/PaymentProofForm";
 
@@ -15,7 +14,6 @@ export default function PaymentProofPage() {
           <PaymentProofForm />
         </section>
       </main>
-      <FlowNav />
       <Footer />
     </AuthGuard>
   );

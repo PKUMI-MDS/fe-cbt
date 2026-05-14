@@ -51,11 +51,11 @@ export default defineConfig({
     // },
   ],
 
-  // Jalankan dev server otomatis jika belum running (opsional)
-  // webServer: {
-  //   command: "npm run dev",
-  //   url: "http://localhost:3000",
-  //   reuseExistingServer: !process.env.CI,
-  //   timeout: 60_000,
-  // },
+  // Jalankan dev server otomatis jika belum running
+  webServer: {
+    command: "npm run start",
+    url: "http://localhost:3000",
+    reuseExistingServer: !process.env.CI,
+    timeout: 60_000,
+  },
 });

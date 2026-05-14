@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FlowNav from "@/components/FlowNav";
 import {
   UserPlus,
   LogIn,
@@ -142,7 +141,6 @@ export default function HomePage() {
           </div>
         </section>
       </main>
-      <FlowNav />
       <Footer />
     </>
   );

@@ -1,6 +1,5 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FlowNav from "@/components/FlowNav";
 import AuthGuard from "@/components/AuthGuard";
 import DashboardContent from "@/components/DashboardContent";
 
@@ -15,7 +14,6 @@ export default function DashboardPage() {
           <DashboardContent />
         </section>
       </main>
-      <FlowNav />
       <Footer />
     </AuthGuard>
   );

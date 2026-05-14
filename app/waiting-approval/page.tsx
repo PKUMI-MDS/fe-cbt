@@ -1,6 +1,5 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FlowNav from "@/components/FlowNav";
 import WaitingApprovalStatus from "@/components/WaitingApprovalStatus";
 
 export const metadata = { title: "CAT/CBT TOAFL - Waiting Approval" };
@@ -14,7 +13,6 @@ export default function WaitingApprovalPage() {
           <WaitingApprovalStatus />
         </section>
       </main>
-      <FlowNav />
       <Footer />
     </>
   );

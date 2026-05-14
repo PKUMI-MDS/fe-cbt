@@ -1,6 +1,5 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FlowNav from "@/components/FlowNav";
 import AuthGuard from "@/components/AuthGuard";
 import ProfileContent from "@/components/ProfileContent";
 
@@ -16,7 +15,6 @@ export default function ProfilePage() {
           <ProfileContent />
         </section>
       </main>
-      <FlowNav />
       <Footer />
     </AuthGuard>
   );

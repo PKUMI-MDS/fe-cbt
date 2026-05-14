@@ -1,6 +1,5 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FlowNav from "@/components/FlowNav";
 import LoginForm from "@/components/LoginForm";
 
 export const metadata = { title: "CAT/CBT TOAFL - Login" };
@@ -25,7 +24,6 @@ export default function LoginPage() {
           <LoginForm />
         </section>
       </main>
-      <FlowNav />
       <Footer />
     </>
   );

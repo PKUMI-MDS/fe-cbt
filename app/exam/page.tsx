@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { Play } from "lucide-react";
 import Toast from "@/components/Toast";
 import AuthGuard from "@/components/AuthGuard";
@@ -501,16 +502,18 @@ export default function ExamPage() {
 
               {/* Image */}
               {currentQ?.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={currentQ.image_url}
-                  alt="Gambar soal"
-                  className="mt-4 max-h-72 rounded-xl object-contain"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = "none";
-                    setToast("Gagal memuat gambar soal. URL mungkin sudah expired.");
-                  }}
-                />
+                <div className="relative mt-4 h-72 w-full">
+                  <Image
+                    src={currentQ.image_url}
+                    alt="Gambar soal"
+                    fill
+                    className="rounded-xl object-contain"
+                    onError={() => {
+                      setToast("Gagal memuat gambar soal. URL mungkin sudah expired.");
+                    }}
+                    unoptimized
+                  />
+                </div>
               ) : null}
 
               {/* Audio Player */}

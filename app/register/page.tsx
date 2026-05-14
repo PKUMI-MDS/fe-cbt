@@ -1,6 +1,5 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
-import FlowNav from "@/components/FlowNav";
 import RegisterForm from "@/components/RegisterForm";
 
 export const metadata = { title: "CAT/CBT TOAFL - Register" };
@@ -44,7 +43,6 @@ export default function RegisterPage() {
           </div>
         </section>
       </main>
-      <FlowNav />
       <Footer />
     </>
   );
