@@ -13,6 +13,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/login");
+      // Fallback: jika router.replace tidak berhasil dalam 2 detik, paksa redirect
+      const fallback = setTimeout(() => {
+        window.location.href = "/login";
+      }, 2000);
+      return () => clearTimeout(fallback);
     }
 
     if (status === "authenticated" && user?.role !== "participant") {
@@ -37,7 +42,13 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (status === "unauthenticated") {
-    return null;
+    return (
+      <main className="center-wrap max-w-lg">
+        <div className="panel w-full text-center">
+          <p className="text-sm font-semibold text-slate-500">Mengalihkan ke halaman login...</p>
+        </div>
+      </main>
+    );
   }
 
   if (user?.role !== "participant") {
