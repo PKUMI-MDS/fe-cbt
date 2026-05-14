@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { ApiError } from "@/lib/api";
 import { getPaymentProof } from "@/lib/auth-api";
+import { getAuthToken } from "@/lib/auth";
 import type { PaymentProof } from "@/lib/types";
 import {
   AlertTriangle,
@@ -144,6 +145,53 @@ export default function PaymentProofDetailPage() {
         </div>
 
         <div className="mt-6 space-y-4">
+          {/* Preview Gambar */}
+          {proof.mime_type?.startsWith("image/") ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Preview Bukti Pembayaran
+              </p>
+              <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
+                <img
+                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL || "https://be-cbt.miftadigital.cloud/api"}/payment-proofs/${proof.id}/preview`}
+                  alt="Bukti pembayaran"
+                  className="w-full object-contain max-h-96"
+                  headers-authorization={`Bearer ${getAuthToken()}`}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = "none";
+                  }}
+                  ref={(img) => {
+                    if (img && !img.dataset.loaded) {
+                      img.dataset.loaded = "1";
+                      const token = getAuthToken();
+                      if (token) {
+                        fetch(img.src, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        })
+                          .then((res) => res.blob())
+                          .then((blob) => {
+                            img.src = URL.createObjectURL(blob);
+                          })
+                          .catch(() => {
+                            img.style.display = "none";
+                          });
+                      }
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          ) : proof.mime_type === "application/pdf" ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                File PDF
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Preview PDF tidak tersedia. File tersimpan dengan aman di server.
+              </p>
+            </div>
+          ) : null}
+
           <div className="rounded-xl border border-slate-200 bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
               Nama File
