@@ -91,7 +91,8 @@ export default function RegisterForm() {
         </label>
         <label className="field">
           <span>No. WhatsApp</span>
-          <input name="phone" type="tel" placeholder="08xxxxxxxxxx" required />
+          <input name="phone" type="tel" placeholder="08xxxxxxxxxx" required minLength={11} maxLength={13} pattern="\d{11,13}" title="Masukkan 11-13 digit angka" />
+          <small className="text-slate-400">Minimal 11 digit, maksimal 13 digit angka.</small>
           {fieldErrors.phone ? <small className="text-rose-600">{fieldErrors.phone}</small> : null}
         </label>
         <label className="field">
