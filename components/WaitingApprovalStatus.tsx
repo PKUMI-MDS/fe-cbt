@@ -9,13 +9,13 @@ import Toast from "@/components/Toast";
 
 function statusLabel(status?: string) {
   const labels: Record<string, string> = {
-    pending_verification: "Pending",
+    pending_verification: "Menunggu Verifikasi",
     rejected: "Ditolak",
     suspended: "Ditangguhkan",
     active: "Aktif",
   };
 
-  return status ? labels[status] ?? status : "Belum login";
+  return status ? labels[status] ?? status : "-";
 }
 
 export default function WaitingApprovalStatus() {
@@ -143,15 +143,6 @@ export default function WaitingApprovalStatus() {
         <div>
           <small>Email</small>
           <strong>{user?.email ?? "-"}</strong>
-        </div>
-        <div>
-          <small>Bukti Bayar</small>
-          <Link
-            href="/payment-proof"
-            className="inline-flex items-center gap-1 font-bold text-brand-600 hover:text-brand-700 hover:underline transition"
-          >
-            Upload / Cek Status
-          </Link>
         </div>
       </div>
 
