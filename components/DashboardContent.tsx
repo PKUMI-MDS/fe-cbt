@@ -144,10 +144,10 @@ export default function DashboardContent() {
     [data?.approvals]
   );
 
-  // Filter: sembunyikan sesi yang sudah selesai DAN jadwalnya sudah lewat
+  // Filter: sembunyikan sesi yang sudah di-nonaktifkan admin (closed/finished/cancelled)
+  // Tetap tampilkan jika masih published (meskipun waktu habis)
   const visibleRegistrations = useMemo(() => {
     if (!data?.registrations) return [];
-    const now = new Date();
 
     return data.registrations.filter((registration) => {
       // Selalu tampilkan jika sedang berjalan
@@ -156,11 +156,9 @@ export default function DashboardContent() {
       const session = registration.exam_session;
       if (!session) return true;
 
-      // Jika status peserta "completed" dan jadwal sudah lewat → sembunyikan
-      if (registration.registration_status === "completed") {
-        const sessionEnd = getSessionEndTime(session.session_date, session.end_time);
-        if (sessionEnd && sessionEnd < now) return false;
-      }
+      // Sembunyikan jika admin sudah menonaktifkan sesi (closed/finished/cancelled)
+      const hiddenStatuses = ["closed", "finished", "cancelled"];
+      if (hiddenStatuses.includes(session.status?.toLowerCase() ?? "")) return false;
 
       return true;
     });
@@ -227,12 +225,21 @@ export default function DashboardContent() {
                 {visibleRegistrations.map((registration) => {
                   const session = registration.exam_session;
                   const duration = session?.duration_minutes ?? session?.exam_package?.duration_minutes;
+                  const sessionEnd = getSessionEndTime(session?.session_date, session?.end_time);
+                  const isExpired = sessionEnd ? sessionEnd < new Date() : false;
 
                   return (
-                    <div key={registration.id} className="rounded-xl border border-slate-200 p-5">
+                    <div key={registration.id} className={`rounded-xl border p-5 ${isExpired ? "border-slate-300 bg-slate-50 opacity-75" : "border-slate-200"}`}>
                       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                         <div>
-                          <span className="badge-brand">{session?.code ?? "Sesi"}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="badge-brand">{session?.code ?? "Sesi"}</span>
+                            {isExpired && (
+                              <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+                                Waktu Habis
+                              </span>
+                            )}
+                          </div>
                           <h3 className="mt-3 text-xl font-extrabold text-slate-950">
                             {session?.title ?? "Sesi ujian"}
                           </h3>
@@ -267,6 +274,10 @@ export default function DashboardContent() {
                           <Link href="/exam/history" className="btn-primary">
                             Lihat Hasil
                           </Link>
+                        ) : isExpired ? (
+                          <span className="inline-flex items-center rounded-xl bg-slate-200 px-5 py-3 text-sm font-bold text-slate-500 cursor-not-allowed">
+                            Sesi Berakhir
+                          </span>
                         ) : (
                           <Link href={`/exam/instruction?session_id=${session?.id ?? ""}`} className="btn-primary">
                             {registration.registration_status === "in_progress" ? "Lanjutkan Ujian" : "Mulai Ujian"}
