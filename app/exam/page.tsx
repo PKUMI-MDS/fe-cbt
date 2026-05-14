@@ -468,18 +468,6 @@ export default function ExamPage() {
     };
   }, [attemptId, isLoading, hasActiveTimer, handleSubmitFinal]);
 
-  // Watch for auto-submit trigger
-  useEffect(() => {
-    if (shouldAutoSubmitRef.current && attemptId) {
-      shouldAutoSubmitRef.current = false;
-      // Delay 1.5 detik agar user sempat lihat modal peringatan
-      const timer = setTimeout(() => {
-        void handleSubmitFinal(true);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [tabSwitchCount, fullscreenExitCount, attemptId, handleSubmitFinal]);
-
   const answeredCount = Object.values(answeredMap).filter((v) => v !== null && v !== undefined).length;
   const emptyCount = totalQuestions - answeredCount;
   const doubtfulCount = doubtfulSet.size;
