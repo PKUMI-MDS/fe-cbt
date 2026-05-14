@@ -9,7 +9,6 @@ import type {
   ExamSession,
   ExamSessionRegistration,
   ExamSettings,
-  ForgotPasswordPayload,
   HeartbeatResponse,
   LoginResponse,
   PaginatedData,
@@ -18,10 +17,8 @@ import type {
   Question,
   RegisterPayload,
   RegisterResponse,
-  ResetPasswordPayload,
   StartExamResponse,
   TestApproval,
-  UpdateProfilePayload,
   ViolationPayload,
 } from "@/lib/types";
 

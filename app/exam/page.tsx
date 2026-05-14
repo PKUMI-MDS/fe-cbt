@@ -339,9 +339,25 @@ export default function ExamPage() {
       return;
     }
 
+    const audio = audioRef.current;
+    if (!audio) {
+      setToast("Audio soal belum siap dimuat.");
+      return;
+    }
+
+    if ((currentQ.audio_play_count ?? 0) >= (currentQ.audio_max_play ?? 1)) {
+      setToast(`Batas putar audio (${currentQ.audio_max_play ?? 1}x) sudah tercapai`);
+      return;
+    }
+
     try {
+      audio.currentTime = 0;
+      const playPromise = audio.play();
+      void playPromise.catch(() => undefined);
       const result = await logAudioPlay(attemptId, currentQ.question_id);
       if (!result.allowed) {
+        audio.pause();
+        audio.currentTime = 0;
         setToast(`Batas putar audio (${result.max_play}x) sudah tercapai`);
         return;
       }
@@ -349,11 +365,9 @@ export default function ExamPage() {
       setCurrentQ((prev) =>
         prev ? { ...prev, audio_play_count: result.play_count } : prev
       );
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        void audioRef.current.play();
-      }
+      await playPromise;
     } catch {
+      audio.pause();
       setToast("Gagal memutar audio.");
     }
   }, [attemptId, currentQ]);
@@ -522,7 +536,14 @@ export default function ExamPage() {
                   <p className="mb-3 text-sm font-bold text-slate-700">
                     Audio soal ({currentQ.audio_play_count ?? 0}/{currentQ.audio_max_play ?? 1}x dimainkan)
                   </p>
-                  <audio ref={audioRef} src={currentQ.audio_url} preload="none" />
+                  <audio
+                    ref={audioRef}
+                    src={currentQ.audio_url}
+                    preload="none"
+                    onError={() => {
+                      setToast("Gagal memuat audio soal. URL audio tidak bisa diakses.");
+                    }}
+                  />
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
@@ -558,19 +579,23 @@ export default function ExamPage() {
               {/* Options */}
               <div className="mt-7 space-y-3" role="radiogroup" aria-label="Pilihan Jawaban">
                 {(currentQ?.options ?? []).map((opt) => (
-                  <button
+                  <label
                     key={opt.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={selectedOptionId === opt.id}
-                    onClick={() => void handleSelectAnswer(opt.id)}
-                    className={`answer focus:outline-none focus:ring-4 focus:ring-brand-500 focus:border-brand-500 w-full text-left ${selectedOptionId === opt.id ? "selected" : ""}`}
+                    className={`answer block cursor-pointer focus-within:outline-none focus-within:ring-4 focus-within:ring-brand-500 focus-within:border-brand-500 w-full text-left ${selectedOptionId === opt.id ? "selected" : ""}`}
                   >
+                    <input
+                      type="radio"
+                      name={`question-${currentQ?.id ?? currentNumber}`}
+                      value={opt.id}
+                      checked={selectedOptionId === opt.id}
+                      onChange={() => void handleSelectAnswer(opt.id)}
+                      className="sr-only"
+                    />
                     <span
                       className={`block ${currentQ?.section_type?.includes("arabic") || currentQ?.section?.includes("arabic") ? "arabic text-xl" : ""}`}
                       dangerouslySetInnerHTML={{ __html: opt.option_html ?? "" }}
                     />
-                  </button>
+                  </label>
                 ))}
               </div>
             </div>
