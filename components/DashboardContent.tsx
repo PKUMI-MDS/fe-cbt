@@ -83,6 +83,25 @@ function formatSessionSchedule(
   return datePart ? `${datePart}, ${timePart}` : timePart;
 }
 
+/**
+ * Hitung waktu akhir sesi sebagai Date object untuk perbandingan.
+ * Menggunakan session_date + end_time (WIB).
+ */
+function getSessionEndTime(sessionDate?: string | null, endTime?: string | null): Date | null {
+  if (!sessionDate || !endTime) return null;
+
+  const dateMatch = sessionDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!dateMatch) return null;
+
+  const time = extractTime(endTime);
+  if (!time) return null;
+
+  const [hours, minutes] = time.split(":").map(Number);
+  // Parse sebagai waktu lokal (WIB) — karena data dari backend sudah WIB
+  const date = new Date(Number(dateMatch[1]), Number(dateMatch[2]) - 1, Number(dateMatch[3]), hours, minutes);
+  return date;
+}
+
 function statusText(status?: string | null) {
   const labels: Record<string, string> = {
     active: "Aktif",
@@ -124,6 +143,28 @@ export default function DashboardContent() {
     () => data?.approvals.filter((approval) => approval.status === "active") ?? [],
     [data?.approvals]
   );
+
+  // Filter: sembunyikan sesi yang sudah selesai DAN jadwalnya sudah lewat
+  const visibleRegistrations = useMemo(() => {
+    if (!data?.registrations) return [];
+    const now = new Date();
+
+    return data.registrations.filter((registration) => {
+      // Selalu tampilkan jika sedang berjalan
+      if (registration.registration_status === "in_progress") return true;
+
+      const session = registration.exam_session;
+      if (!session) return true;
+
+      // Jika status peserta "completed" dan jadwal sudah lewat → sembunyikan
+      if (registration.registration_status === "completed") {
+        const sessionEnd = getSessionEndTime(session.session_date, session.end_time);
+        if (sessionEnd && sessionEnd < now) return false;
+      }
+
+      return true;
+    });
+  }, [data?.registrations]);
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -177,13 +218,13 @@ export default function DashboardContent() {
 
           <div className="panel animate-fade-in-up">
             <h2 className="text-lg font-extrabold text-slate-950">Sesi Ujian</h2>
-            {data.registrations.length === 0 ? (
+            {visibleRegistrations.length === 0 ? (
               <div className="mt-4 rounded-xl border border-dashed border-slate-200 p-5 text-sm leading-6 text-slate-500">
                 Belum ada sesi ujian yang ditugaskan. Jika sudah membayar, upload bukti pembayaran dan tunggu approval admin.
               </div>
             ) : (
               <div className="mt-4 space-y-4">
-                {data.registrations.map((registration) => {
+                {visibleRegistrations.map((registration) => {
                   const session = registration.exam_session;
                   const duration = session?.duration_minutes ?? session?.exam_package?.duration_minutes;
 
