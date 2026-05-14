@@ -35,6 +35,14 @@ function statusConfig(status: string) {
           "inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700",
         cardClass: "border-emerald-200 bg-emerald-50/30",
       };
+    case "expired":
+      return {
+        label: "Terpakai",
+        icon: CheckCircle,
+        badgeClass:
+          "inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-500",
+        cardClass: "border-slate-200 bg-slate-50/30",
+      };
     case "rejected":
       return {
         label: "Ditolak",
@@ -267,7 +275,8 @@ export default function PaymentProofForm() {
         ) : (
           <div className="mt-4 space-y-3">
             {proofs.map((proof) => {
-              const cfg = statusConfig(proof.status);
+              const displayStatus = (proof as Record<string, unknown>).effective_status as string ?? proof.status;
+              const cfg = statusConfig(displayStatus);
               const StatusIcon = cfg.icon;
               return (
                 <Link
