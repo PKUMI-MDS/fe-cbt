@@ -127,24 +127,26 @@ export default function WaitingApprovalStatus() {
             : "Registrasi berhasil dikirim. Akun belum bisa mengakses ujian sampai proses verifikasi admin selesai.")}
       </p>
 
-      <div className="status-grid">
+      <div className="mt-8 grid grid-cols-2 gap-6 text-center">
         <div>
-          <small>Status Akun</small>
-          <strong
-            className={
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Status Akun</p>
+          <p
+            className={`mt-1 text-lg font-extrabold ${
               isActive
                 ? "text-emerald-700"
                 : isRejected
                 ? "text-rose-700"
                 : "text-amber-700"
-            }
+            }`}
           >
             {status === "loading" ? "Memeriksa..." : statusLabel(user?.account_status ?? "pending_verification")}
-          </strong>
+          </p>
         </div>
         <div>
-          <small>Email</small>
-          <strong>{user?.email || emailFromQuery || "-"}</strong>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Email</p>
+          <p className="mt-1 text-lg font-extrabold text-slate-950 break-all">
+            {user?.email || emailFromQuery || "-"}
+          </p>
         </div>
       </div>
 
