@@ -74,6 +74,7 @@ export default function ExamPage() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
 
   // Load attempt on mount
   useEffect(() => {
@@ -165,7 +166,11 @@ export default function ExamPage() {
       if (!attemptId) return;
       setIsSubmitting(true);
 
-      // Hapus beforeunload agar tidak muncul dialog "Leave page"
+      // Hapus beforeunload listener agar tidak muncul dialog "Leave page"
+      if (beforeUnloadRef.current) {
+        window.removeEventListener("beforeunload", beforeUnloadRef.current);
+        beforeUnloadRef.current = null;
+      }
       window.onbeforeunload = null;
 
       // Keluar fullscreen jika masih aktif
@@ -185,7 +190,6 @@ export default function ExamPage() {
           window.location.href = `/exam/completed?attempt_id=${attemptId}&show_result=${result.show_result ?? false}`;
         }
       } catch {
-        // Tetap redirect — ujian sudah ter-submit atau error lain
         clearInterval(timerRef.current!);
         clearInterval(heartbeatRef.current!);
         window.location.href = autoSubmit ? "/dashboard" : "/dashboard";
@@ -246,6 +250,7 @@ export default function ExamPage() {
       e.returnValue = "";
       return "";
     };
+    beforeUnloadRef.current = handleBeforeUnload;
 
     // 2. Fullscreen change — keluar fullscreen = pelanggaran
     const handleFullscreenChange = () => {
