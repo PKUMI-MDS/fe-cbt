@@ -22,6 +22,7 @@ export default function WaitingApprovalStatus() {
   const router = useRouter();
   const { status, user, refresh } = useAuthSession();
   const [message, setMessage] = useState("");
+  const [emailFromQuery, setEmailFromQuery] = useState("");
   const [toast, setToast] = useState("");
   const [countdown, setCountdown] = useState(0);
   const previousStatusRef = useRef<string | undefined>(undefined);
@@ -29,6 +30,7 @@ export default function WaitingApprovalStatus() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setMessage(params.get("message") ?? "");
+    setEmailFromQuery(params.get("email") ?? "");
   }, []);
 
   // Track initial status to detect transition
@@ -137,12 +139,12 @@ export default function WaitingApprovalStatus() {
                 : "text-amber-700"
             }
           >
-            {status === "loading" ? "Memeriksa..." : statusLabel(user?.account_status)}
+            {status === "loading" ? "Memeriksa..." : statusLabel(user?.account_status ?? "pending_verification")}
           </strong>
         </div>
         <div>
           <small>Email</small>
-          <strong>{user?.email ?? "-"}</strong>
+          <strong>{user?.email || emailFromQuery || "-"}</strong>
         </div>
       </div>
 
