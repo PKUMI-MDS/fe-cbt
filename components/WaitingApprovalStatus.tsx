@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { CheckCircle, Hourglass, RefreshCw } from "lucide-react";
 import { useAuthSession } from "@/lib/use-auth-session";
 import Toast from "@/components/Toast";
+import PaymentProofForm from "@/components/PaymentProofForm";
 
 function statusLabel(status?: string) {
   const labels: Record<string, string> = {
@@ -149,6 +150,12 @@ export default function WaitingApprovalStatus() {
           </p>
         </div>
       </div>
+
+      {status === "authenticated" && (
+        <div className="mt-8 border-t border-slate-100 pt-8 text-left">
+          <PaymentProofForm />
+        </div>
+      )}
 
       <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
         {status === "authenticated" && !isActive ? (
