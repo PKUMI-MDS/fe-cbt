@@ -50,7 +50,7 @@ export default function RegisterForm() {
 
     try {
       await registerParticipant(payload);
-      window.location.href = `/waiting-approval?email=${encodeURIComponent(payload.email)}`;
+      window.location.href = `/login?registered=1&email=${encodeURIComponent(payload.email)}`;
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);

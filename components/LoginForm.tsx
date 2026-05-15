@@ -13,6 +13,15 @@ export default function LoginForm() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Cek apakah baru saja register
+  const [successMessage] = useState(() => {
+    if (typeof window === "undefined") return "";
+    const params = new URLSearchParams(window.location.search);
+    return params.get("registered") === "1"
+      ? `Registrasi berhasil! Silakan login dengan akun Anda.`
+      : "";
+  });
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
@@ -56,8 +65,14 @@ export default function LoginForm() {
     <form className="panel" onSubmit={handleSubmit}>
       <h2 className="text-2xl font-extrabold text-slate-950">Login Peserta</h2>
       <p className="mt-2 text-sm text-slate-500">
-        Masukkan akun yang sudah disetujui admin.
+        Masukkan email dan password Anda untuk masuk.
       </p>
+
+      {successMessage ? (
+        <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          {successMessage}
+        </div>
+      ) : null}
 
       {error ? (
         <div className="mt-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">

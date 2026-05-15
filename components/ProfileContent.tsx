@@ -19,7 +19,6 @@ function initials(name?: string) {
 function accountStatusLabel(status?: string) {
   const labels: Record<string, string> = {
     active: "Aktif",
-    pending_verification: "Pending",
     rejected: "Ditolak",
     suspended: "Ditangguhkan",
   };

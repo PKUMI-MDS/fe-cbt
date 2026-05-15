@@ -13,7 +13,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (status === "unauthenticated") {
       router.replace("/login");
-      // Fallback: jika router.replace tidak berhasil dalam 2 detik, paksa redirect
       const fallback = setTimeout(() => {
         window.location.href = "/login";
       }, 2000);
@@ -24,12 +23,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       void logout();
       return;
     }
-
-    const allowedForPending = pathname === "/waiting-approval" || pathname === "/payment-proof" || pathname.startsWith("/payment-proof/");
-    if (status === "authenticated" && user?.account_status !== "active" && !allowedForPending) {
-      router.replace("/waiting-approval");
-    }
-  }, [logout, pathname, router, status, user?.account_status, user?.role]);
+  }, [logout, router, status, user?.role]);
 
   if (status === "loading") {
     return (
@@ -52,11 +46,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (user?.role !== "participant") {
-    return null;
-  }
-
-  const allowedForPending = pathname === "/waiting-approval" || pathname === "/payment-proof" || pathname.startsWith("/payment-proof/");
-  if (user?.account_status !== "active" && !allowedForPending) {
     return null;
   }
 

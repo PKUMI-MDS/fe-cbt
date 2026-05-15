@@ -10,10 +10,9 @@ import PaymentProofForm from "@/components/PaymentProofForm";
 
 function statusLabel(status?: string) {
   const labels: Record<string, string> = {
-    pending_verification: "Menunggu Verifikasi",
+    active: "Aktif",
     rejected: "Ditolak",
     suspended: "Ditangguhkan",
-    active: "Aktif",
   };
 
   return status ? labels[status] ?? status : "-";
@@ -140,7 +139,7 @@ export default function WaitingApprovalStatus() {
                 : "text-amber-700"
             }`}
           >
-            {status === "loading" ? "Memeriksa..." : statusLabel(user?.account_status ?? "pending_verification")}
+            {status === "loading" ? "Memeriksa..." : statusLabel(user?.account_status ?? "active")}
           </p>
         </div>
         <div>
