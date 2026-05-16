@@ -2,6 +2,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import {
   UserPlus,
+  Upload,
   BadgeCheck,
   Calendar,
   BarChart3,
@@ -42,38 +43,49 @@ export default function PanduanPage() {
               </div>
               <h3 className="mb-2 text-lg font-bold text-slate-900">1. Registrasi</h3>
               <p className="text-sm leading-relaxed text-slate-500">
-                Daftar akun dan upload bukti pembayaran untuk mendapatkan hak tes.
+                Daftar akun untuk mendapatkan akses mengikuti tes.
+              </p>
+            </div>
+
+            {/* Card 2 */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
+              <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <Upload className="h-6 w-6" />
+              </div>
+              <h3 className="mb-2 text-lg font-bold text-slate-900">2. Unggah Bukti Pembayaran</h3>
+              <p className="text-sm leading-relaxed text-slate-500">
+                Unggah bukti pembayaran agar admin dapat memverifikasi transaksi Anda.
               </p>
             </div>
             
-            {/* Card 2 */}
+            {/* Card 3 */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                 <BadgeCheck className="h-6 w-6" />
               </div>
-              <h3 className="mb-2 text-lg font-bold text-slate-900">2. Approval</h3>
+              <h3 className="mb-2 text-lg font-bold text-slate-900">3. Approval</h3>
               <p className="text-sm leading-relaxed text-slate-500">
                 Admin verifikasi pembayaran. Setiap approval berlaku untuk satu kali tes.
               </p>
             </div>
 
-            {/* Card 3 */}
+            {/* Card 4 */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
                 <Calendar className="h-6 w-6" />
               </div>
-              <h3 className="mb-2 text-lg font-bold text-slate-900">3. Sesi Tes</h3>
+              <h3 className="mb-2 text-lg font-bold text-slate-900">4. Sesi Tes</h3>
               <p className="text-sm leading-relaxed text-slate-500">
                 Peserta ditempatkan ke sesi dengan tanggal, waktu, dan paket soal tertentu.
               </p>
             </div>
 
-            {/* Card 4 */}
+            {/* Card 5 */}
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md">
               <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
                 <BarChart3 className="h-6 w-6" />
               </div>
-              <h3 className="mb-2 text-lg font-bold text-slate-900">4. Hasil</h3>
+              <h3 className="mb-2 text-lg font-bold text-slate-900">5. Hasil</h3>
               <p className="text-sm leading-relaxed text-slate-500">
                 Hasil ditampilkan sesuai pengaturan per sesi. Retake memerlukan pembayaran baru.
               </p>
