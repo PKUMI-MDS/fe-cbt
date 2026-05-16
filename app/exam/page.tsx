@@ -151,15 +151,16 @@ export default function ExamPage() {
       try {
         const hb = await sendHeartbeat(attemptId);
         setRemainingSeconds(hb.remaining_seconds);
-        if (hb.status === "submitted" || hb.status === "timeout") {
-          router.push("/exam/completed");
+        // "expired" adalah nilai enum backend untuk timeout, "submitted" untuk submit manual
+        if (hb.status === "submitted" || hb.status === "expired" || hb.status === "auto_submitted" || hb.status === "timeout") {
+          window.location.href = "/exam/completed";
         }
       } catch {
         // silent fail
       }
     }, HEARTBEAT_INTERVAL_MS);
     return () => clearInterval(heartbeatRef.current!);
-  }, [attemptId, isLoading, router]);
+  }, [attemptId, isLoading]);
 
   const handleSubmitFinal = useCallback(
     async (autoSubmit = false) => {
@@ -202,9 +203,21 @@ export default function ExamPage() {
     async (type: ViolationPayload["violation_type"], detail: string) => {
       if (!attemptId || isAutoSubmittingRef.current) return;
 
-      // Log ke backend
+      // Log ke backend — cek apakah backend sudah auto-submit
       try {
-        await logViolation(attemptId, { violation_type: type, severity: "medium", detail });
+        const response = await logViolation(attemptId, { violation_type: type, severity: "medium", detail });
+        // Backend bisa auto-submit jika threshold tercapai di sisi server
+        const raw = response as Record<string, unknown>;
+        if (raw?.auto_submitted === true) {
+          isAutoSubmittingRef.current = true;
+          setViolationMessage("Batas pelanggaran tercapai. Ujian disubmit otomatis oleh sistem.");
+          setShowViolationModal(true);
+          if (beforeUnloadRef.current) window.removeEventListener("beforeunload", beforeUnloadRef.current);
+          window.onbeforeunload = null;
+          if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+          setTimeout(() => { window.location.href = "/dashboard"; }, 1500);
+          return;
+        }
       } catch {
         // silent fail
       }

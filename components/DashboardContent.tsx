@@ -151,8 +151,8 @@ export default function DashboardContent() {
     if (!data?.registrations) return [];
 
     return data.registrations.filter((registration) => {
-      // Selalu tampilkan jika sedang berjalan
-      if (registration.registration_status === "in_progress") return true;
+      // Selalu tampilkan jika sedang berjalan (confirmed = sudah mulai ujian)
+      if (registration.registration_status === "confirmed") return true;
 
       const session = registration.exam_session;
       if (!session) return true;
