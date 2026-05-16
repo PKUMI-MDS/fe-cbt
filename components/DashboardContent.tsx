@@ -145,23 +145,15 @@ export default function DashboardContent() {
     [data?.approvals]
   );
 
-  // Filter: sembunyikan sesi yang sudah di-nonaktifkan admin (closed/finished/cancelled)
-  // Tetap tampilkan jika masih published (meskipun waktu habis)
+  // Filter: tampilkan hanya sesi dengan status published
   const visibleRegistrations = useMemo(() => {
     if (!data?.registrations) return [];
 
     return data.registrations.filter((registration) => {
-      // Selalu tampilkan jika sedang berjalan (confirmed = sudah mulai ujian)
-      if (registration.registration_status === "confirmed") return true;
-
       const session = registration.exam_session;
-      if (!session) return true;
+      if (!session) return false;
 
-      // Sembunyikan jika admin sudah menonaktifkan sesi (closed/finished/cancelled)
-      const hiddenStatuses = ["closed", "finished", "cancelled"];
-      if (hiddenStatuses.includes(session.status?.toLowerCase() ?? "")) return false;
-
-      return true;
+      return (session.status?.toLowerCase() ?? "") === "published";
     });
   }, [data?.registrations]);
 
@@ -187,7 +179,7 @@ export default function DashboardContent() {
           <h1 className="page-title">Halo, {data.profile?.name ?? "Peserta"}</h1>
           <p className="page-desc">
             Status akun kamu {statusText(data.profile?.account_status).toLowerCase()}.
-            Cek sesi ujian, approval, dan riwayat hasil dari backend.
+            Cek sesi ujian, approval, dan riwayat hasil ujian.
           </p>
         </div>
         <Link href="/profile" className="btn-secondary">
