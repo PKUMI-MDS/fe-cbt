@@ -39,6 +39,7 @@ function asString(value: unknown, fallback = "") {
 
 function normalizeAttempt(rawValue: unknown): ActiveAttempt {
   const raw = asRecord(rawValue);
+  const pkg = asRecord(raw.package);
 
   return {
     id: asNumber(raw.id),
@@ -49,6 +50,9 @@ function normalizeAttempt(rawValue: unknown): ActiveAttempt {
     current_question_number: asNumber(raw.current_question_number, 1),
     total_questions: asNumber(raw.total_questions),
     remaining_seconds: asNumber(raw.remaining_seconds),
+    // Limit dari exam package — dipakai FE agar sinkron dengan BE
+    max_tab_switch: pkg.max_tab_switch !== undefined ? asNumber(pkg.max_tab_switch, 3) : null,
+    max_fullscreen_exit: pkg.max_fullscreen_exit !== undefined ? asNumber(pkg.max_fullscreen_exit, 3) : null,
   };
 }
 
@@ -214,7 +218,21 @@ export function getMyExamSessions() {
 }
 
 export function getActiveAttempt() {
-  return api.get<ActiveAttemptResponse>("/my/active-attempt");
+  return api.get<unknown>("/my/active-attempt").then((response) => {
+    if (!response) return null;
+    const raw = response as Record<string, unknown>;
+    if (!raw.attempt) return null;
+    const attempt = normalizeAttempt(raw.attempt);
+    const sessionRaw = raw.session as Record<string, unknown> | undefined;
+    return {
+      attempt,
+      session: {
+        id: Number(sessionRaw?.id ?? 0),
+        title: String(sessionRaw?.title ?? "Ujian"),
+        code: sessionRaw?.code ? String(sessionRaw.code) : null,
+      },
+    };
+  });
 }
 
 export function getMyResults() {

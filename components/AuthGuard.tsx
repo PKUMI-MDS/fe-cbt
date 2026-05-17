@@ -2,12 +2,10 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { usePathname } from "next/navigation";
 import { useAuthSession } from "@/lib/use-auth-session";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const pathname = usePathname();
   const { logout, status, user } = useAuthSession();
 
   useEffect(() => {

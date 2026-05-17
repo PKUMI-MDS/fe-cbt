@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ApiError } from "@/lib/api";
 import { loginParticipant } from "@/lib/auth-api";
 import { useAuthSession } from "@/lib/use-auth-session";
@@ -12,15 +12,15 @@ export default function LoginForm() {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
-  // Cek apakah baru saja register
-  const [successMessage] = useState(() => {
-    if (typeof window === "undefined") return "";
+  // Baca query param setelah mount (client-only) untuk hindari hydration mismatch
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    return params.get("registered") === "1"
-      ? `Registrasi berhasil! Silakan login dengan akun Anda.`
-      : "";
-  });
+    if (params.get("registered") === "1") {
+      setSuccessMessage("Registrasi berhasil! Silakan login dengan akun Anda.");
+    }
+  }, []);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -117,6 +117,8 @@ export type ActiveAttempt = {
   current_question_number?: number | null;
   total_questions?: number | null;
   remaining_seconds?: number | null;
+  max_tab_switch?: number | null;
+  max_fullscreen_exit?: number | null;
 };
 
 export type ActiveAttemptResponse = {
