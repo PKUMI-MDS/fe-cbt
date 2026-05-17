@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Paperclip, Upload } from "lucide-react";
+import { Paperclip, Upload, FileImage, FileText, X, CheckCircle2 } from "lucide-react";
 import PaymentInfo from "@/components/PaymentInfo";
 import { ApiError } from "@/lib/api";
 import { registerParticipant } from "@/lib/auth-api";
@@ -12,6 +12,8 @@ export default function RegisterForm() {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,8 +31,7 @@ export default function RegisterForm() {
       password_confirmation: String(formData.get("password_confirmation") ?? ""),
     };
 
-    const fileInput = event.currentTarget.querySelector<HTMLInputElement>("input[name='payment_proof']");
-    const file = fileInput?.files?.[0];
+    const file = selectedFile;
 
     const nextFieldErrors: Record<string, string> = {};
 
@@ -64,6 +65,12 @@ export default function RegisterForm() {
       return;
     }
 
+    if (Object.keys(nextFieldErrors).length > 0) {
+      setFieldErrors(nextFieldErrors);
+      setIsSubmitting(false);
+      return;
+    }
+
     if (file) {
       payload.payment_proof = file;
     }
@@ -88,6 +95,24 @@ export default function RegisterForm() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0] ?? null;
+    setSelectedFile(file);
+    setFieldErrors((prev) => ({ ...prev, payment_proof: "" }));
+
+    if (file && file.type.startsWith("image/")) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    } else {
+      setPreviewUrl(null);
+    }
+  }
+
+  function removeFile() {
+    setSelectedFile(null);
+    setPreviewUrl(null);
   }
 
   return (
@@ -143,6 +168,49 @@ export default function RegisterForm() {
             Upload bukti transfer sebagai syarat registrasi. Admin akan mereview akun dan bukti pembayaran Anda sekaligus.
           </p>
         </div>
+
+        {selectedFile ? (
+          <div className="mt-4 rounded-xl border border-emerald-200 bg-white p-4">
+            <div className="flex items-start gap-3">
+              {previewUrl ? (
+                <img
+                  src={previewUrl}
+                  alt="Preview"
+                  className="h-16 w-16 rounded-lg border border-slate-200 object-cover"
+                />
+              ) : selectedFile.type === "application/pdf" ? (
+                <div className="grid h-16 w-16 shrink-0 place-items-center rounded-lg border border-rose-200 bg-rose-50">
+                  <FileText className="h-8 w-8 text-rose-500" />
+                </div>
+              ) : (
+                <div className="grid h-16 w-16 shrink-0 place-items-center rounded-lg border border-emerald-200 bg-emerald-50">
+                  <FileImage className="h-8 w-8 text-emerald-500" />
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-900">{selectedFile.name}</p>
+                <p className="text-xs text-slate-500">
+                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Siap diupload
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={removeFile}
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                title="Hapus file"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <label className="mt-4 block cursor-pointer">
           <input
             name="payment_proof"
@@ -150,10 +218,15 @@ export default function RegisterForm() {
             accept=".jpg,.jpeg,.png,.pdf"
             className="hidden"
             required
+            onChange={handleFileChange}
           />
-          <div className="flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-semibold text-brand-700 transition hover:bg-brand-50">
+          <div className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
+              selectedFile
+                ? "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                : "border-brand-200 bg-white text-brand-700 hover:bg-brand-50"
+            }`}>
             <Paperclip className="h-4 w-4" />
-            Pilih File (JPG, PNG, PDF, max 5MB)
+            {selectedFile ? "Ganti File" : "Pilih File (JPG, PNG, PDF, max 5MB)"}
           </div>
           {fieldErrors.payment_proof ? (
             <small className="mt-1 block text-rose-600">{fieldErrors.payment_proof}</small>
