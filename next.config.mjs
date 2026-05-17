@@ -13,7 +13,7 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "be-cbt.miftadigital.cloud",
+        hostname: "be-cbt.pkumionline.cloud",
         pathname: "/**",
       },
     ],

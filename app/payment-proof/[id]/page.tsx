@@ -72,7 +72,7 @@ export default function PaymentProofDetailPage() {
         setError(
           err instanceof ApiError
             ? err.message
-            : "Gagal memuat detail bukti pembayaran."
+            : "Gagal memuat detail bukti pembayaran.",
         );
       } finally {
         setIsLoading(false);
@@ -86,7 +86,9 @@ export default function PaymentProofDetailPage() {
     return (
       <main className="center-wrap max-w-xl">
         <div className="panel w-full text-center">
-          <p className="text-sm font-semibold text-slate-500">Memuat detail...</p>
+          <p className="text-sm font-semibold text-slate-500">
+            Memuat detail...
+          </p>
         </div>
       </main>
     );
@@ -153,7 +155,7 @@ export default function PaymentProofDetailPage() {
               </p>
               <div className="mt-3 overflow-hidden rounded-lg border border-slate-100">
                 <img
-                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL || "https://be-cbt.miftadigital.cloud/api"}/payment-proofs/${proof.id}/preview`}
+                  src={`${process.env.NEXT_PUBLIC_API_BASE_URL || "https://be-cbt.pkumionline.cloud/api"}/payment-proofs/${proof.id}/preview`}
                   alt="Bukti pembayaran"
                   className="w-full object-contain max-h-96"
                   headers-authorization={`Bearer ${getAuthToken()}`}
@@ -187,7 +189,8 @@ export default function PaymentProofDetailPage() {
                 File PDF
               </p>
               <p className="mt-2 text-sm text-slate-600">
-                Preview PDF tidak tersedia. File tersimpan dengan aman di server.
+                Preview PDF tidak tersedia. File tersimpan dengan aman di
+                server.
               </p>
             </div>
           ) : null}
