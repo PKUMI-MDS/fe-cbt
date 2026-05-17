@@ -18,6 +18,7 @@ import {
   logViolation,
   markDoubtful,
   navigateQuestion,
+  resumeExam,
   saveAnswer,
   sendHeartbeat,
   submitExam,
@@ -35,6 +36,21 @@ const DEFAULT_EXAM_SETTINGS: ExamSettings = {
   shuffle_options: true,
   show_result_to_user: true,
 };
+
+// ─── Helper: deteksi attempt tidak valid ──────────────────────────────────────
+function isAttemptInvalidError(err: unknown): boolean {
+  if (!(err instanceof ApiError)) return false;
+  if (err.code === 403 || err.code === 404 || err.code === 409 || err.code === 410) return true;
+  const msg = err.message?.toLowerCase() ?? "";
+  return msg.includes("attempt not found") || msg.includes("not in progress") || msg.includes("expired") || msg.includes("closed");
+}
+
+// Ambil attempt_status dari error payload jika ada
+function getAttemptStatusFromError(err: unknown): string | null {
+  if (!(err instanceof ApiError)) return null;
+  const data = err.response?.data as Record<string, unknown> | undefined;
+  return (data?.attempt_status as string) ?? null;
+}
 
 function formatTime(seconds: number) {
   if (seconds <= 0) return "00:00:00";
@@ -71,10 +87,49 @@ export default function ExamPage() {
   const [examSettings, setExamSettings] = useState<ExamSettings>(DEFAULT_EXAM_SETTINGS);
   const isAutoSubmittingRef = useRef(false);
   const violationCountRef = useRef(0);
+  const packageLimitsRef = useRef<{ max_tab_switch: number | null; max_fullscreen_exit: number | null }>({
+    max_tab_switch: null,
+    max_fullscreen_exit: null,
+  });
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
+
+  // ─── Handler terpusat: attempt tidak valid ────────────────────────────────
+  const handleAttemptInvalid = useCallback((err: unknown) => {
+    // Stop semua interval
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
+
+    // Hapus beforeunload agar tidak muncul dialog
+    if (beforeUnloadRef.current) {
+      window.removeEventListener("beforeunload", beforeUnloadRef.current);
+      beforeUnloadRef.current = null;
+    }
+    window.onbeforeunload = null;
+
+    // Keluar fullscreen
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+
+    // Tentukan redirect berdasarkan attempt_status
+    const attemptStatus = getAttemptStatusFromError(err);
+    const isCompleted = attemptStatus === "submitted" || attemptStatus === "auto_submitted" || attemptStatus === "closed";
+
+    // Tampilkan pesan ke user sebelum redirect
+    const message = isCompleted
+      ? "Ujian telah selesai. Mengalihkan ke halaman hasil..."
+      : "Sesi ujian tidak valid atau sudah berakhir. Mengalihkan ke dashboard...";
+
+    setToast(message);
+
+    // Redirect setelah user sempat membaca pesan
+    setTimeout(() => {
+      window.location.href = isCompleted ? "/exam/completed" : "/dashboard";
+    }, 2000);
+  }, []);
 
   // Load attempt on mount
   useEffect(() => {
@@ -95,23 +150,53 @@ export default function ExamPage() {
           setTotalQuestions(active.attempt.total_questions ?? 0);
           initialQuestionNumber = active.attempt.current_question_number ?? 1;
           setCurrentNumber(initialQuestionNumber);
+          // Ambil limit dari attempt (dari exam package)
+          console.log('[DEBUG] active attempt package:', active.attempt.max_tab_switch, active.attempt.max_fullscreen_exit);
+          if (active.attempt.max_tab_switch != null || active.attempt.max_fullscreen_exit != null) {
+            // Simpan ke ref agar tidak hilang saat async state update
+            packageLimitsRef.current = {
+              max_tab_switch: active.attempt.max_tab_switch ?? null,
+              max_fullscreen_exit: active.attempt.max_fullscreen_exit ?? null,
+            };
+            setExamSettings((prev) => ({
+              ...prev,
+              max_tab_switch: active.attempt.max_tab_switch ?? prev.max_tab_switch,
+              max_fullscreen_exit: active.attempt.max_fullscreen_exit ?? prev.max_fullscreen_exit,
+            }));
+          }
         } else {
-          // attempt_id dari URL: WAJIB fetch remaining_seconds dari backend
-          // agar timer tidak mulai dari 0 dan langsung auto-submit!
+          // attempt_id dari URL: validasi via resumeExam(id) — lebih akurat karena cek attempt spesifik
           try {
-            const active = await getActiveAttempt();
-            if (active && active.attempt.id === id) {
-              setRemainingSeconds(active.attempt.remaining_seconds ?? 1800);
-              setTotalQuestions(active.attempt.total_questions ?? 0);
-              initialQuestionNumber = active.attempt.current_question_number ?? 1;
-              setCurrentNumber(initialQuestionNumber);
-            } else {
-              // Fallback: heartbeat untuk dapat remaining_seconds
+            const resumed = await resumeExam(id);
+            const attempt = resumed.attempt;
+            setRemainingSeconds(attempt.remaining_seconds ?? 1800);
+            setTotalQuestions(attempt.total_questions ?? 0);
+            initialQuestionNumber = attempt.current_question_number ?? 1;
+            setCurrentNumber(initialQuestionNumber);
+            if (attempt.max_tab_switch != null || attempt.max_fullscreen_exit != null) {
+              packageLimitsRef.current = {
+                max_tab_switch: attempt.max_tab_switch ?? null,
+                max_fullscreen_exit: attempt.max_fullscreen_exit ?? null,
+              };
+              setExamSettings((prev) => ({
+                ...prev,
+                max_tab_switch: attempt.max_tab_switch ?? prev.max_tab_switch,
+                max_fullscreen_exit: attempt.max_fullscreen_exit ?? prev.max_fullscreen_exit,
+              }));
+            }
+          } catch (err) {
+            if (isAttemptInvalidError(err)) {
+              // Attempt tidak valid (sudah selesai, tidak ditemukan, dll) → handleAttemptInvalid
+              handleAttemptInvalid(err);
+              return;
+            }
+            // Error lain (network) → fallback heartbeat
+            try {
               const hb = await sendHeartbeat(id);
               setRemainingSeconds(hb.remaining_seconds > 0 ? hb.remaining_seconds : 1800);
+            } catch {
+              setRemainingSeconds(1800);
             }
-          } catch {
-            setRemainingSeconds(1800); // default 30 menit agar tidak auto-submit
           }
         }
 
@@ -120,7 +205,6 @@ export default function ExamPage() {
         setCurrentQ(q);
         if (q.total) setTotalQuestions(q.total);
 
-        // Restore answered from question's selected_option_id
         if (q.selected_option_id) {
           setAnsweredMap((prev) => ({ ...prev, [initialQuestionNumber]: q.selected_option_id! }));
         }
@@ -128,12 +212,21 @@ export default function ExamPage() {
           setDoubtfulSet((prev) => new Set(prev).add(initialQuestionNumber));
         }
 
-        // Load exam settings (dynamic limits, auto-submit, etc.)
+        // Load exam settings global (untuk auto_submit_on_violation_limit dan fallback)
         try {
           const settings = await getExamSettings();
-          setExamSettings(settings);
+          setExamSettings((prev) => ({
+            ...prev,
+            auto_submit_on_violation_limit: settings.auto_submit_on_violation_limit,
+            shuffle_questions: settings.shuffle_questions,
+            shuffle_options: settings.shuffle_options,
+            show_result_to_user: settings.show_result_to_user,
+            // Pakai limit dari package (ref) jika ada, fallback ke global settings
+            max_tab_switch: packageLimitsRef.current.max_tab_switch ?? settings.max_tab_switch,
+            max_fullscreen_exit: packageLimitsRef.current.max_fullscreen_exit ?? settings.max_fullscreen_exit,
+          }));
         } catch {
-          // fallback ke DEFAULT_EXAM_SETTINGS yang sudah di-set di initial state
+          setToast("Aturan ujian tidak dapat dimuat. Menggunakan aturan default.");
         }
       } catch (err) {
         setError(err instanceof ApiError ? err.message : "Gagal memuat soal ujian.");
@@ -151,16 +244,18 @@ export default function ExamPage() {
       try {
         const hb = await sendHeartbeat(attemptId);
         setRemainingSeconds(hb.remaining_seconds);
-        // "expired" adalah nilai enum backend untuk timeout, "submitted" untuk submit manual
         if (hb.status === "submitted" || hb.status === "expired" || hb.status === "auto_submitted" || hb.status === "timeout") {
           window.location.href = "/exam/completed";
         }
-      } catch {
-        // silent fail
+      } catch (err) {
+        if (isAttemptInvalidError(err)) {
+          handleAttemptInvalid(err);
+        }
+        // error lain: silent fail, jangan spam toast
       }
     }, HEARTBEAT_INTERVAL_MS);
     return () => clearInterval(heartbeatRef.current!);
-  }, [attemptId, isLoading]);
+  }, [attemptId, isLoading, handleAttemptInvalid]);
 
   const handleSubmitFinal = useCallback(
     async (autoSubmit = false) => {
@@ -218,8 +313,13 @@ export default function ExamPage() {
           setTimeout(() => { window.location.href = "/dashboard"; }, 1500);
           return;
         }
-      } catch {
-        // silent fail
+      } catch (err) {
+        if (isAttemptInvalidError(err)) {
+          // Attempt sudah tidak valid saat log violation — redirect
+          handleAttemptInvalid(err);
+          return;
+        }
+        // Error lain: silent fail, jangan blokir UI
       }
 
       // Increment violation count (gunakan ref untuk nilai real-time, state untuk render)
@@ -380,21 +480,29 @@ export default function ExamPage() {
         setDoubtfulSet((prev) => new Set(prev).add(number));
       }
     } catch (err) {
+      if (isAttemptInvalidError(err)) {
+        handleAttemptInvalid(err);
+        return;
+      }
       setToast(err instanceof ApiError ? err.message : "Gagal memuat soal.");
     }
-  }, []);
+  }, [handleAttemptInvalid]);
 
   const goToQuestion = useCallback(
     async (n: number) => {
       if (!attemptId) return;
       try {
         await navigateQuestion(attemptId, n);
-      } catch {
-        // navigate API optional — load tetap jalan
+      } catch (err) {
+        if (isAttemptInvalidError(err)) {
+          handleAttemptInvalid(err);
+          return;
+        }
+        // navigate error non-kritis — tetap load soal
       }
       await loadQuestion(attemptId, n);
     },
-    [attemptId, loadQuestion]
+    [attemptId, loadQuestion, handleAttemptInvalid]
   );
 
   const handleSelectAnswer = useCallback(
@@ -406,11 +514,15 @@ export default function ExamPage() {
         await saveAnswer(attemptId, currentQ.id, optionId);
         setSaveState("Saved");
       } catch (err) {
+        if (isAttemptInvalidError(err)) {
+          handleAttemptInvalid(err);
+          return;
+        }
         setSaveState("Failed");
         setToast(err instanceof ApiError ? err.message : "Gagal menyimpan jawaban.");
       }
     },
-    [attemptId, currentQ, currentNumber]
+    [attemptId, currentQ, currentNumber, handleAttemptInvalid]
   );
 
   const handleDoubtful = useCallback(async () => {
@@ -424,15 +536,19 @@ export default function ExamPage() {
     try {
       await markDoubtful(attemptId, currentQ.id, newValue);
       setToast(newValue ? "Soal ditandai ragu-ragu" : "Tanda ragu-ragu dihapus");
-    } catch {
-      // revert
+    } catch (err) {
+      if (isAttemptInvalidError(err)) {
+        handleAttemptInvalid(err);
+        return;
+      }
+      // revert UI jika error non-kritis
       setDoubtfulSet((prev) => {
         const next = new Set(prev);
         if (newValue) next.delete(currentNumber); else next.add(currentNumber);
         return next;
       });
     }
-  }, [attemptId, currentQ, currentNumber, doubtfulSet]);
+  }, [attemptId, currentQ, currentNumber, doubtfulSet, handleAttemptInvalid]);
 
   const handlePlayAudio = useCallback(async (audioRef: React.RefObject<HTMLAudioElement | null>) => {
     if (!attemptId || !currentQ) return;
