@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import Image from "next/image";
-import { Play } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import Toast from "@/components/Toast";
 import AuthGuard from "@/components/AuthGuard";
 import ExamHeader from "@/components/exam/ExamHeader";
+import QuestionPanel from "@/components/exam/QuestionPanel";
+import QuestionNavigator from "@/components/exam/QuestionNavigator";
+import SubmitExamModal from "@/components/exam/SubmitExamModal";
+import ViolationModal from "@/components/exam/ViolationModal";
 import { ApiError } from "@/lib/api";
 import {
   getActiveAttempt,
@@ -43,7 +45,6 @@ function formatTime(seconds: number) {
 }
 
 export default function ExamPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const attemptIdParam = searchParams.get("attempt_id");
 
@@ -71,7 +72,6 @@ export default function ExamPage() {
   const isAutoSubmittingRef = useRef(false);
   const violationCountRef = useRef(0);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
@@ -207,7 +207,7 @@ export default function ExamPage() {
       try {
         const response = await logViolation(attemptId, { violation_type: type, severity: "medium", detail });
         // Backend bisa auto-submit jika threshold tercapai di sisi server
-        const raw = response as Record<string, unknown>;
+        const raw = response as unknown as Record<string, unknown>;
         if (raw?.auto_submitted === true) {
           isAutoSubmittingRef.current = true;
           setViolationMessage("Batas pelanggaran tercapai. Ujian disubmit otomatis oleh sistem.");
@@ -434,7 +434,7 @@ export default function ExamPage() {
     }
   }, [attemptId, currentQ, currentNumber, doubtfulSet]);
 
-  const handlePlayAudio = useCallback(async () => {
+  const handlePlayAudio = useCallback(async (audioRef: React.RefObject<HTMLAudioElement | null>) => {
     if (!attemptId || !currentQ) return;
     if (!currentQ.question_id) {
       setToast("Gagal memutar audio: ID soal tidak tersedia dari server.");
@@ -564,282 +564,61 @@ export default function ExamPage() {
           currentNumber={currentNumber}
           totalQuestions={totalQuestions}
           remainingTime={formatTime(remainingSeconds)}
+          remainingSeconds={remainingSeconds}
           saveState={saveState}
           onOpenSubmit={() => setShowModal(true)}
         />
 
         <div className="mx-auto grid max-w-7xl gap-5 px-4 py-6 sm:px-6 lg:grid-cols-[1fr_320px] lg:px-8">
-          {/* Main Content */}
-          <div className="space-y-5 animate-fade-in-up">
-            <div className="panel">
-              <div className="mb-5 flex flex-wrap items-center gap-2">
-                <span className="badge-brand">{currentQ?.section_type ?? "Soal"}</span>
-                <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-                  Auto-save aktif
-                </span>
-              </div>
-
-              {/* Stem */}
-              <div
-                className="prose max-w-none text-slate-950"
-                dangerouslySetInnerHTML={{ __html: currentQ?.stem_html ?? "<p>Memuat soal...</p>" }}
-              />
-
-              {/* Image */}
-              {currentQ?.image_url ? (
-                <div className="relative mt-4 h-72 w-full">
-                  <Image
-                    src={currentQ.image_url}
-                    alt="Gambar soal"
-                    fill
-                    className="rounded-xl object-contain"
-                    onError={() => {
-                      setToast("Gagal memuat gambar soal. URL mungkin sudah expired.");
-                    }}
-                    unoptimized
-                  />
-                </div>
-              ) : null}
-
-              {/* Audio Player */}
-              {currentQ?.audio_url ? (
-                <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="mb-3 text-sm font-bold text-slate-700">
-                    Audio soal ({currentQ.audio_play_count ?? 0}/{currentQ.audio_max_play ?? 1}x dimainkan)
-                  </p>
-                  <audio
-                    ref={audioRef}
-                    src={currentQ.audio_url}
-                    preload="none"
-                    onError={() => {
-                      setToast("Gagal memuat audio soal. URL audio tidak bisa diakses.");
-                    }}
-                  />
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => void handlePlayAudio()}
-                      className={`grid h-11 w-11 place-items-center rounded-full text-white ${
-                        (currentQ.audio_play_count ?? 0) >= (currentQ.audio_max_play ?? 1)
-                          ? "bg-slate-300"
-                          : "bg-brand-600 hover:bg-brand-700"
-                      }`}
-                      aria-label="Putar audio"
-                      disabled={(currentQ.audio_play_count ?? 0) >= (currentQ.audio_max_play ?? 1)}
-                    >
-                      <Play className="h-4 w-4 fill-current" />
-                    </button>
-                    <div className="h-2 flex-1 rounded-full bg-slate-200">
-                      <div
-                        className="h-2 rounded-full bg-brand-600 transition-all"
-                        style={{
-                          width: `${Math.min(
-                            ((currentQ.audio_play_count ?? 0) / (currentQ.audio_max_play ?? 1)) * 100,
-                            100
-                          )}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs font-bold text-slate-500">
-                      {Math.max(0, (currentQ.audio_max_play ?? 1) - (currentQ.audio_play_count ?? 0))} sisa
-                    </span>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Options */}
-              <div className="mt-7 space-y-3" role="radiogroup" aria-label="Pilihan Jawaban">
-                {(currentQ?.options ?? []).map((opt) => (
-                  <label
-                    key={opt.id}
-                    className={`answer block cursor-pointer focus-within:outline-none focus-within:ring-4 focus-within:ring-brand-500 focus-within:border-brand-500 w-full text-left ${selectedOptionId === opt.id ? "selected" : ""}`}
-                  >
-                    <input
-                      type="radio"
-                      name={`question-${currentQ?.id ?? currentNumber}`}
-                      value={opt.id}
-                      checked={selectedOptionId === opt.id}
-                      onChange={() => void handleSelectAnswer(opt.id)}
-                      className="sr-only"
-                    />
-                    <span
-                      className={`block ${currentQ?.section_type?.includes("arabic") || currentQ?.section?.includes("arabic") ? "arabic text-xl" : ""}`}
-                      dangerouslySetInnerHTML={{ __html: opt.option_html ?? "" }}
-                    />
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            {/* Navigation Buttons */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-              <button
-                type="button"
-                onClick={() => void (currentNumber > 1 && goToQuestion(currentNumber - 1))}
-                disabled={currentNumber <= 1}
-                className="btn-secondary hidden sm:inline-flex disabled:opacity-40"
-              >
-                Soal Sebelumnya
-              </button>
-
-              {/* Mobile Prev/Next Grid */}
-              <div className="grid grid-cols-2 gap-3 sm:hidden">
-                <button
-                  type="button"
-                  onClick={() => void (currentNumber > 1 && goToQuestion(currentNumber - 1))}
-                  disabled={currentNumber <= 1}
-                  className="btn-secondary disabled:opacity-40"
-                >
-                  Sebelumnya
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void (currentNumber < totalQuestions && goToQuestion(currentNumber + 1))}
-                  disabled={currentNumber >= totalQuestions}
-                  className="btn-primary disabled:opacity-40"
-                >
-                  Berikutnya
-                </button>
-              </div>
-
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={() => void handleDoubtful()}
-                  className={`rounded-xl border px-6 py-3 text-sm font-bold transition ${
-                    doubtfulSet.has(currentNumber)
-                      ? "border-amber-400 bg-amber-400 text-amber-950"
-                      : "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                  }`}
-                >
-                  {doubtfulSet.has(currentNumber) ? "✓ Ragu-ragu" : "Tandai Ragu-ragu"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void (currentNumber < totalQuestions && goToQuestion(currentNumber + 1))}
-                  disabled={currentNumber >= totalQuestions}
-                  className="btn-primary hidden sm:inline-flex disabled:opacity-40"
-                >
-                  Soal Berikutnya
-                </button>
-              </div>
-            </div>
-          </div>
+          {/* Question Panel */}
+          {currentQ && (
+            <QuestionPanel
+              currentQ={currentQ}
+              currentNumber={currentNumber}
+              totalQuestions={totalQuestions}
+              selectedOptionId={selectedOptionId}
+              doubtfulSet={doubtfulSet}
+              onSelectAnswer={(optionId) => void handleSelectAnswer(optionId)}
+              onDoubtful={() => void handleDoubtful()}
+              onPrev={() => void (currentNumber > 1 && goToQuestion(currentNumber - 1))}
+              onNext={() => void (currentNumber < totalQuestions && goToQuestion(currentNumber + 1))}
+              onPlayAudio={(audioRef) => void handlePlayAudio(audioRef)}
+              onImageError={() => setToast("Gagal memuat gambar soal. URL mungkin sudah expired.")}
+              onAudioError={() => setToast("Gagal memuat audio soal. URL audio tidak bisa diakses.")}
+            />
+          )}
 
           {/* Question Navigator */}
-          <aside className="lg:sticky lg:top-24 lg:h-fit animate-fade-in-up delay-100">
-            <div className="panel">
-              <h3 className="font-extrabold text-slate-950">Navigasi Soal</h3>
-              <div className="mt-5 grid grid-cols-6 gap-2">
-                {Array.from({ length: totalQuestions }, (_, i) => i + 1).map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    aria-label={`Buka soal ${n}`}
-                    aria-current={n === currentNumber ? "step" : undefined}
-                    onClick={() => void goToQuestion(n)}
-                    className={`h-10 rounded-xl text-xs font-extrabold transition focus:outline-none focus:ring-4 focus:ring-brand-400 ${
-                      n === currentNumber
-                        ? "bg-brand-600 text-white shadow-md"
-                        : doubtfulSet.has(n)
-                        ? "bg-amber-400 text-amber-950 shadow-sm"
-                        : answeredMap[n]
-                        ? "bg-emerald-500 text-white shadow-sm"
-                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-              <div className="mt-5 grid grid-cols-2 gap-2 text-xs text-slate-500">
-                <p><span className="mr-1 inline-block h-3 w-3 rounded bg-brand-600" />Sekarang</p>
-                <p><span className="mr-1 inline-block h-3 w-3 rounded bg-emerald-500" />Dijawab</p>
-                <p><span className="mr-1 inline-block h-3 w-3 rounded bg-amber-400" />Ragu-ragu</p>
-                <p><span className="mr-1 inline-block h-3 w-3 rounded bg-slate-200" />Belum</p>
-              </div>
-            </div>
-          </aside>
+          <QuestionNavigator
+            totalQuestions={totalQuestions}
+            currentNumber={currentNumber}
+            answeredMap={answeredMap}
+            doubtfulSet={doubtfulSet}
+            onNavigate={(n) => void goToQuestion(n)}
+          />
         </div>
       </section>
 
       {/* Violation Modal */}
       {showViolationModal && (
-        <div className="modal" role="dialog" aria-modal="true" aria-labelledby="violationTitle">
-          <div className="modal-panel max-w-sm text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-rose-100">
-              <span className="text-3xl">🚨</span>
-            </div>
-            <h2 id="violationTitle" className="text-2xl font-extrabold text-rose-700">
-              {violationCount >= examSettings.max_tab_switch ? "UJIAN DISUBMIT OTOMATIS" : "PERINGATAN TERAKHIR"}
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
-              {violationMessage}
-            </p>
-            <div className="mt-4 rounded-xl bg-rose-50 p-3">
-              <p className="text-xs font-bold text-rose-700">
-                Pelanggaran: {violationCount} / {examSettings.max_tab_switch}
-              </p>
-            </div>
-            {violationCount < examSettings.max_tab_switch && (
-              <div className="mt-6">
-                <button
-                  type="button"
-                  onClick={() => setShowViolationModal(false)}
-                  className="w-full rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white"
-                >
-                  Saya Mengerti, Tidak Akan Mengulangi
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
+        <ViolationModal
+          violationCount={violationCount}
+          violationMessage={violationMessage}
+          examSettings={examSettings}
+          onDismiss={() => setShowViolationModal(false)}
+        />
       )}
 
       {/* Submit Modal */}
       {showModal && (
-        <div className="modal" role="dialog" aria-modal="true" aria-labelledby="submitTitle">
-          <div className="modal-panel">
-            <h2 id="submitTitle" className="text-2xl font-extrabold text-slate-950">
-              Submit Ujian Final?
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">
-              Setelah submit, jawaban tidak bisa diubah lagi.
-            </p>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl bg-emerald-50 p-4">
-                <p className="text-xs font-bold text-emerald-700">Dijawab</p>
-                <p className="text-2xl font-extrabold text-emerald-700">{answeredCount}</p>
-              </div>
-              <div className="rounded-xl bg-rose-50 p-4">
-                <p className="text-xs font-bold text-rose-700">Belum</p>
-                <p className="text-2xl font-extrabold text-rose-700">{emptyCount}</p>
-              </div>
-              <div className="rounded-xl bg-amber-50 p-4">
-                <p className="text-xs font-bold text-amber-700">Ragu-ragu</p>
-                <p className="text-2xl font-extrabold text-amber-700">{doubtfulCount}</p>
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                disabled={isSubmitting}
-                className="btn-secondary"
-              >
-                Tinjau Ulang
-              </button>
-              <button
-                type="button"
-                onClick={() => void handleSubmitFinal()}
-                disabled={isSubmitting}
-                className="rounded-xl bg-slate-950 px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
-              >
-                {isSubmitting ? "Menyimpan..." : "Submit Final"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <SubmitExamModal
+          answeredCount={answeredCount}
+          emptyCount={emptyCount}
+          doubtfulCount={doubtfulCount}
+          isSubmitting={isSubmitting}
+          onCancel={() => setShowModal(false)}
+          onConfirm={() => void handleSubmitFinal()}
+        />
       )}
     </AuthGuard>
   );

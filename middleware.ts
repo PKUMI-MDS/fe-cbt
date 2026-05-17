@@ -6,6 +6,7 @@ const PUBLIC_PATHS = [
   "/login",
   "/register",
   "/forgot-password",
+  "/reset-password",
   "/waiting-approval",
   "/panduan",
 ];
