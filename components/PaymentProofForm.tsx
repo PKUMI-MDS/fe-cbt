@@ -13,6 +13,7 @@ import {
   Upload,
   XCircle,
 } from "lucide-react";
+import PaymentInfo from "@/components/PaymentInfo";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
@@ -170,6 +171,7 @@ export default function PaymentProofForm() {
 
   return (
     <div className="space-y-5">
+      <PaymentInfo />
       {/* Pending info */}
       {hasPending ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">

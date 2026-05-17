@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Paperclip } from "lucide-react";
+import { Paperclip, Upload } from "lucide-react";
+import PaymentInfo from "@/components/PaymentInfo";
 import { ApiError } from "@/lib/api";
 import { registerParticipant } from "@/lib/auth-api";
 import type { RegisterPayload } from "@/lib/types";
@@ -28,6 +29,9 @@ export default function RegisterForm() {
       password_confirmation: String(formData.get("password_confirmation") ?? ""),
     };
 
+    const fileInput = event.currentTarget.querySelector<HTMLInputElement>("input[name='payment_proof']");
+    const file = fileInput?.files?.[0];
+
     const nextFieldErrors: Record<string, string> = {};
 
     if (!/^\d{11,13}$/.test(payload.phone || "")) {
@@ -42,15 +46,31 @@ export default function RegisterForm() {
       nextFieldErrors.password_confirmation = "Konfirmasi password tidak sama.";
     }
 
+    if (!file) {
+      nextFieldErrors.payment_proof = "Bukti pembayaran wajib diupload.";
+    } else {
+      const allowedTypes = ["image/jpeg", "image/png", "application/pdf"];
+      if (!allowedTypes.includes(file.type)) {
+        nextFieldErrors.payment_proof = "Format file harus JPG, PNG, atau PDF.";
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        nextFieldErrors.payment_proof = "Ukuran file maksimal 5MB.";
+      }
+    }
+
     if (Object.keys(nextFieldErrors).length > 0) {
       setFieldErrors(nextFieldErrors);
       setIsSubmitting(false);
       return;
     }
 
+    if (file) {
+      payload.payment_proof = file;
+    }
+
     try {
       await registerParticipant(payload);
-      window.location.href = `/login?registered=1&email=${encodeURIComponent(payload.email)}`;
+      window.location.href = `/waiting-approval?registered=1&email=${encodeURIComponent(payload.email)}`;
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -113,12 +133,32 @@ export default function RegisterForm() {
         </label>
       </div>
 
-      <div className="mt-6 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/60 p-6 text-center">
-        <Paperclip className="mx-auto h-10 w-10 text-brand-600" />
-        <h3 className="mt-4 font-bold text-slate-950">Bukti Pembayaran</h3>
-        <p className="mt-1 text-sm text-slate-500">
-          Upload bukti transfer dapat dilakukan di menu Dashboard setelah Anda menyelesaikan registrasi dan masuk ke akun Anda.
-        </p>
+      <PaymentInfo />
+
+      <div className="mt-6 rounded-2xl border-2 border-dashed border-brand-200 bg-brand-50/60 p-6">
+        <div className="text-center">
+          <Upload className="mx-auto h-10 w-10 text-brand-600" />
+          <h3 className="mt-4 font-bold text-slate-950">Bukti Pembayaran</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            Upload bukti transfer sebagai syarat registrasi. Admin akan mereview akun dan bukti pembayaran Anda sekaligus.
+          </p>
+        </div>
+        <label className="mt-4 block cursor-pointer">
+          <input
+            name="payment_proof"
+            type="file"
+            accept=".jpg,.jpeg,.png,.pdf"
+            className="hidden"
+            required
+          />
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-brand-200 bg-white px-4 py-3 text-sm font-semibold text-brand-700 transition hover:bg-brand-50">
+            <Paperclip className="h-4 w-4" />
+            Pilih File (JPG, PNG, PDF, max 5MB)
+          </div>
+          {fieldErrors.payment_proof ? (
+            <small className="mt-1 block text-rose-600">{fieldErrors.payment_proof}</small>
+          ) : null}
+        </label>
       </div>
 
       <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

@@ -187,7 +187,16 @@ export function logoutParticipant() {
 }
 
 export function registerParticipant(payload: RegisterPayload) {
-  return api.post<RegisterResponse>("/register", payload, { auth: false });
+  const formData = new FormData();
+  formData.set("name", payload.name);
+  formData.set("email", payload.email);
+  formData.set("password", payload.password);
+  formData.set("password_confirmation", payload.password_confirmation);
+  if (payload.phone) formData.set("phone", payload.phone);
+  if (payload.institution) formData.set("institution", payload.institution);
+  if (payload.payment_proof) formData.set("payment_proof", payload.payment_proof);
+
+  return api.post<RegisterResponse>("/register", formData, { auth: false });
 }
 
 export function uploadPaymentProof(payload: PaymentProofPayload) {
