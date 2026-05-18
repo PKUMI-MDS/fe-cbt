@@ -25,6 +25,7 @@ import {
 } from "@/lib/auth-api";
 import type { AttemptResult, ExamSettings, Question, ViolationPayload } from "@/lib/types";
 import ExamSkeleton from "@/components/ExamSkeleton";
+import DesktopOnlyGuard from "@/components/DesktopOnlyGuard";
 
 const HEARTBEAT_INTERVAL_MS = 30_000;
 
@@ -671,6 +672,7 @@ export default function ExamPage() {
 
   return (
     <AuthGuard>
+      <DesktopOnlyGuard>
       <Toast message={toast} onHide={() => setToast("")} />
 
       <section className="min-h-screen bg-slate-100">
@@ -736,6 +738,7 @@ export default function ExamPage() {
           onConfirm={() => void handleSubmitFinal()}
         />
       )}
+      </DesktopOnlyGuard>
     </AuthGuard>
   );
 }
