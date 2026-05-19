@@ -26,7 +26,7 @@ export type AuthUser = {
   name: string;
   email: string;
   role: "admin" | "participant" | string;
-  account_status: "active" | "rejected" | "suspended" | string;
+  account_status: "pending_verification" | "active" | "rejected" | "suspended" | string;
   approved_at?: string | null;
   last_login_at?: string | null;
   profile?: UserProfile | null;
@@ -44,6 +44,7 @@ export type RegisterPayload = {
   password_confirmation: string;
   phone?: string;
   institution?: string;
+  payment_proof?: File;
 };
 
 export type RegisterResponse = {
@@ -117,6 +118,8 @@ export type ActiveAttempt = {
   current_question_number?: number | null;
   total_questions?: number | null;
   remaining_seconds?: number | null;
+  max_tab_switch?: number | null;
+  max_fullscreen_exit?: number | null;
 };
 
 export type ActiveAttemptResponse = {

@@ -7,9 +7,11 @@ import { CheckCircle, Hourglass, RefreshCw } from "lucide-react";
 import { useAuthSession } from "@/lib/use-auth-session";
 import Toast from "@/components/Toast";
 import PaymentProofForm from "@/components/PaymentProofForm";
+import PaymentInfo from "@/components/PaymentInfo";
 
 function statusLabel(status?: string) {
   const labels: Record<string, string> = {
+    pending_verification: "Menunggu Verifikasi",
     active: "Aktif",
     rejected: "Ditolak",
     suspended: "Ditangguhkan",
@@ -139,7 +141,7 @@ export default function WaitingApprovalStatus() {
                 : "text-amber-700"
             }`}
           >
-            {status === "loading" ? "Memeriksa..." : statusLabel(user?.account_status ?? "active")}
+            {status === "loading" ? "Memeriksa..." : statusLabel(user?.account_status ?? "pending_verification")}
           </p>
         </div>
         <div>
@@ -152,6 +154,7 @@ export default function WaitingApprovalStatus() {
 
       {status === "authenticated" && (
         <div className="mt-8 border-t border-slate-100 pt-8 text-left">
+          <PaymentInfo />
           <PaymentProofForm />
         </div>
       )}

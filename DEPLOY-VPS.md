@@ -6,7 +6,7 @@ Panduan ini untuk deploy `fe-cbt` Next.js app ke VPS dengan:
 - PM2 sebagai process manager
 - npm sebagai package manager
 - Port aplikasi: `3009`
-- Domain: `cat.miftadigital.cloud`
+- Domain: `cat.pkumionline.cloud`
 
 ## 1. Prasyarat
 
@@ -35,7 +35,7 @@ TTL: Auto
 Hasil akhirnya:
 
 ```text
-cat.miftadigital.cloud
+cat.pkumionline.cloud
 ```
 
 ## 3. Clone atau Pull Project
@@ -75,7 +75,7 @@ nano .env.local
 Isi:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://be-cbt.miftadigital.cloud/api
+NEXT_PUBLIC_API_BASE_URL=https://be-cbt.pkumionline.cloud/api
 ```
 
 Catatan:
@@ -170,7 +170,7 @@ Ikuti command lanjutan yang ditampilkan oleh `pm2 startup`.
 Buat server block:
 
 ```bash
-sudo nano /etc/nginx/sites-available/cat.miftadigital.cloud
+sudo nano /etc/nginx/sites-available/cat.pkumionline.cloud
 ```
 
 Isi:
@@ -180,7 +180,7 @@ server {
     listen 80;
     listen [::]:80;
 
-    server_name cat.miftadigital.cloud;
+    server_name cat.pkumionline.cloud;
 
     client_max_body_size 20M;
 
@@ -204,7 +204,7 @@ server {
 Aktifkan config:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/cat.miftadigital.cloud /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/cat.pkumionline.cloud /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 ```
@@ -227,7 +227,7 @@ sudo apt install certbot python3-certbot-nginx -y
 Generate SSL:
 
 ```bash
-sudo certbot --nginx -d cat.miftadigital.cloud
+sudo certbot --nginx -d cat.pkumionline.cloud
 ```
 
 Cek auto-renew:
@@ -239,7 +239,7 @@ sudo certbot renew --dry-run
 Setelah SSL aktif, akses:
 
 ```text
-https://cat.miftadigital.cloud
+https://cat.pkumionline.cloud
 ```
 
 ## 10. Update Deploy Setelah Pull
@@ -300,7 +300,7 @@ cat .env.local
 Pastikan:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://be-cbt.miftadigital.cloud/api
+NEXT_PUBLIC_API_BASE_URL=https://be-cbt.pkumionline.cloud/api
 ```
 
 Lalu rebuild dan reload:
@@ -345,5 +345,5 @@ sudo systemctl reload nginx
 Production URL:
 
 ```text
-https://cat.miftadigital.cloud
+https://cat.pkumionline.cloud
 ```

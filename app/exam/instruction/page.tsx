@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Toast from "@/components/Toast";
 import AuthGuard from "@/components/AuthGuard";
+import DesktopOnlyGuard from "@/components/DesktopOnlyGuard";
 import { ApiError } from "@/lib/api";
 import { getActiveAttempt, startExam } from "@/lib/auth-api";
 import { getMyExamSessions } from "@/lib/auth-api";
@@ -84,6 +85,7 @@ export default function ExamInstructionPage() {
 
   return (
     <AuthGuard>
+      <DesktopOnlyGuard>
       <Header />
       <Toast message={toast} onHide={() => setToast("")} />
       <main id="main">
@@ -202,6 +204,7 @@ export default function ExamInstructionPage() {
           </div>
         </div>
       )}
+      </DesktopOnlyGuard>
     </AuthGuard>
   );
 }
