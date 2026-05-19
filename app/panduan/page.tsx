@@ -28,7 +28,7 @@ export default function PanduanPage() {
           <div className="mb-12 text-center">
             <span className="text-sm font-bold text-brand-600">Alur Ujian</span>
             <h1 className="mt-2 text-3xl font-extrabold text-slate-950 sm:text-4xl">
-              Cara Kerja Platform
+              Panduan Mengikuti Ujian
             </h1>
             <p className="mt-4 text-slate-500">
               Ikuti alur berikut untuk mengikuti ujian CBT TOAFL
@@ -94,12 +94,12 @@ export default function PanduanPage() {
         </section>
 
         {/* Divider */}
-        <div className="mx-auto my-20 max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* <div className="mx-auto my-20 max-w-7xl px-4 sm:px-6 lg:px-8">
           <hr className="border-slate-200" />
-        </div>
+        </div> */}
 
         {/* Fitur Unggulan Section */}
-        <section className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
+        {/* <section className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8">
           <div className="mb-12 text-center">
             <span className="text-sm font-bold text-brand-600">Fitur Unggulan</span>
             <h2 className="mt-2 text-3xl font-extrabold text-slate-950 sm:text-4xl">
@@ -150,7 +150,7 @@ export default function PanduanPage() {
               <h3 className="text-lg font-bold text-slate-900">Visibilitas Hasil</h3>
             </div>
           </div>
-        </section>
+        </section> */}
       </main>
       <Footer />
     </>
