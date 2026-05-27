@@ -90,9 +90,33 @@ export default function ScoreDetailPage() {
                 )}
               </div>
 
+              {/* Section scores */}
+              {(result?.listening_score != null || result?.structure_score != null || result?.reading_score != null) && (
+                <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                  {result?.listening_score != null && (
+                    <div className="rounded-xl bg-sky-50 p-4 text-center">
+                      <p className="text-xs font-bold text-sky-700">Listening</p>
+                      <p className="text-2xl font-extrabold text-sky-700">{result.listening_score}</p>
+                    </div>
+                  )}
+                  {result?.structure_score != null && (
+                    <div className="rounded-xl bg-violet-50 p-4 text-center">
+                      <p className="text-xs font-bold text-violet-700">Structure</p>
+                      <p className="text-2xl font-extrabold text-violet-700">{result.structure_score}</p>
+                    </div>
+                  )}
+                  {result?.reading_score != null && (
+                    <div className="rounded-xl bg-amber-50 p-4 text-center">
+                      <p className="text-xs font-bold text-amber-700">Reading</p>
+                      <p className="text-2xl font-extrabold text-amber-700">{result.reading_score}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Answer stats if available */}
               {(result?.correct_count != null || result?.wrong_count != null) ? (
-                <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-xl bg-emerald-50 p-4 text-center">
                     <p className="text-xs font-bold text-emerald-700">Benar</p>
                     <p className="text-2xl font-extrabold text-emerald-700">

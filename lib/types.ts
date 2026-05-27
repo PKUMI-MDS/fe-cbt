@@ -133,6 +133,9 @@ export type ExamResult = {
   exam_session_id?: number | null;
   session_title?: string | null;
   total_score?: number | string | null;
+  listening_score?: number | null;
+  structure_score?: number | null;
+  reading_score?: number | null;
   correct_count?: number | null;
   wrong_count?: number | null;
   unanswered_count?: number | null;
@@ -204,6 +207,9 @@ export type AttemptResult = {
   exam_session_id?: number | null;
   session_title?: string | null;
   total_score?: number | string | null;
+  listening_score?: number | null;
+  structure_score?: number | null;
+  reading_score?: number | null;
   correct_count?: number | null;
   wrong_count?: number | null;
   unanswered_count?: number | null;
