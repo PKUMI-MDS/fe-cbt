@@ -117,7 +117,7 @@ export default function HomePage() {
 
         {/* Features */}
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3 place-items-center">
             <article className="feature">
               <ClipboardEdit className="h-7 w-7 text-brand-600" />
               <h3>Register</h3>
