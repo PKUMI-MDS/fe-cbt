@@ -129,11 +129,6 @@ export default function HomePage() {
               <p>Admin verifikasi sebelum peserta bisa akses ujian.</p>
             </article>
             <article className="feature">
-              <Shuffle className="h-7 w-7 text-amber-600" />
-              <h3>Random Paket</h3>
-              <p>Setiap peserta mendapat susunan soal berbeda.</p>
-            </article>
-            <article className="feature">
               <BarChart3 className="h-7 w-7 text-violet-600" />
               <h3>Result</h3>
               <p>Skor tampil jika diizinkan oleh admin.</p>
