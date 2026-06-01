@@ -17,6 +17,7 @@ import type {
   Question,
   RegisterPayload,
   RegisterResponse,
+  RegistrationStatus,
   StartExamResponse,
   TestApproval,
   ViolationPayload,
