@@ -117,7 +117,7 @@ export default function HomePage() {
 
         {/* Features */}
         <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3 place-items-center">
             <article className="feature">
               <ClipboardEdit className="h-7 w-7 text-brand-600" />
               <h3>Register</h3>
@@ -127,11 +127,6 @@ export default function HomePage() {
               <BadgeCheck className="h-7 w-7 text-emerald-600" />
               <h3>Approval</h3>
               <p>Admin verifikasi sebelum peserta bisa akses ujian.</p>
-            </article>
-            <article className="feature">
-              <Shuffle className="h-7 w-7 text-amber-600" />
-              <h3>Random Paket</h3>
-              <p>Setiap peserta mendapat susunan soal berbeda.</p>
             </article>
             <article className="feature">
               <BarChart3 className="h-7 w-7 text-violet-600" />
