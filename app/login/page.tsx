@@ -6,7 +6,7 @@ import { getRegistrationStatus } from "@/lib/auth-api";
 export const metadata = { title: "CAT/CBT TOAFL - Login" };
 
 export default async function LoginPage() {
-  let registrationStatus = { is_open: true, message: "" };
+  let registrationStatus = { is_open: true, message: "", open_date: null, close_date: null };
 
   try {
     registrationStatus = await getRegistrationStatus();
