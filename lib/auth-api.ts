@@ -357,6 +357,10 @@ export function getExamSettings() {
   return api.get<unknown>("/settings/exam").then(normalizeExamSettings);
 }
 
+export function getRegistrationStatus() {
+  return api.get<RegistrationStatus>("/settings/registration", { auth: false });
+}
+
 export function forgotPassword(payload: { email: string }) {
   return api.post<null>("/forgot-password", payload, { auth: false });
 }

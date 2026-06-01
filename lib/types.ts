@@ -230,6 +230,13 @@ export type ExamSettings = {
   show_result_to_user: boolean;
 };
 
+export type RegistrationStatus = {
+  is_open: boolean;
+  message: string;
+  open_date: string | null;
+  close_date: string | null;
+};
+
 export type ForgotPasswordPayload = {
   email: string;
 };

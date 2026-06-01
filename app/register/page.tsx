@@ -1,10 +1,19 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RegisterForm from "@/components/RegisterForm";
+import { getRegistrationStatus } from "@/lib/auth-api";
 
 export const metadata = { title: "CAT/CBT TOAFL - Register" };
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
+  let registrationStatus = { is_open: true, message: "" };
+
+  try {
+    registrationStatus = await getRegistrationStatus();
+  } catch {
+    // ignore — allow register if status endpoint fails
+  }
+
   return (
     <>
       <Header />
@@ -16,7 +25,7 @@ export default function RegisterPage() {
             Isi data diri untuk membuat akun peserta dan menunggu proses verifikasi admin.
           </p>
           <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
-            <RegisterForm />
+            <RegisterForm registrationStatus={registrationStatus} />
 
             <aside className="rounded-2xl bg-slate-950 p-6 text-white shadow-soft">
               <h2 className="text-xl font-extrabold">Alur setelah daftar</h2>
