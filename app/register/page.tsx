@@ -2,11 +2,12 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RegisterForm from "@/components/RegisterForm";
 import { getRegistrationStatus } from "@/lib/auth-api";
+import type { RegistrationStatus } from "@/lib/types";
 
 export const metadata = { title: "CAT/CBT TOAFL - Register" };
 
 export default async function RegisterPage() {
-  let registrationStatus = { is_open: true, message: "", open_date: null, close_date: null };
+  let registrationStatus: RegistrationStatus = { is_open: true, message: "", open_date: null, close_date: null };
 
   try {
     registrationStatus = await getRegistrationStatus();
