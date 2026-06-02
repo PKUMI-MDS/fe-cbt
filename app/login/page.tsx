@@ -1,10 +1,20 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import LoginForm from "@/components/LoginForm";
+import { getRegistrationStatus } from "@/lib/auth-api";
+import type { RegistrationStatus } from "@/lib/types";
 
 export const metadata = { title: "CAT/CBT TOAFL - Login" };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  let registrationStatus: RegistrationStatus = { is_open: true, message: "", open_date: null, close_date: null };
+
+  try {
+    registrationStatus = await getRegistrationStatus();
+  } catch {
+    // ignore — allow login if status endpoint fails
+  }
+
   return (
     <>
       <Header />
@@ -21,7 +31,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <LoginForm />
+          <LoginForm registrationStatus={registrationStatus} />
         </section>
       </main>
       <Footer />

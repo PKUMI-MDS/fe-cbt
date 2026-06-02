@@ -6,8 +6,13 @@ import { ApiError } from "@/lib/api";
 import { loginParticipant } from "@/lib/auth-api";
 import { useAuthSession } from "@/lib/use-auth-session";
 import { clearAuthToken } from "@/lib/auth";
+import type { RegistrationStatus } from "@/lib/types";
 
-export default function LoginForm() {
+interface LoginFormProps {
+  registrationStatus: RegistrationStatus;
+}
+
+export default function LoginForm({ registrationStatus }: LoginFormProps) {
   const { saveSession } = useAuthSession();
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -50,8 +55,18 @@ export default function LoginForm() {
           email: err.errors?.email?.[0] ?? "",
           password: err.errors?.password?.[0] ?? "",
         });
+        // 403 bisa karena: registrasi ditutup, atau akun belum aktif
         if (err.code === 403) {
-          window.location.href = `/waiting-approval?message=${encodeURIComponent(err.message)}`;
+          const msg = err.message.toLowerCase();
+          const isRegistrationClosed =
+            msg.includes("registrasi") ||
+            msg.includes("pendaftaran") ||
+            msg.includes("ditutup") ||
+            msg.includes("ditutup");
+          // Kalau bukan karena registrasi ditutup, arahkan ke waiting-approval
+          if (!isRegistrationClosed) {
+            window.location.href = `/waiting-approval?message=${encodeURIComponent(err.message)}`;
+          }
         }
       } else {
         setError("Login gagal. Coba lagi.");
@@ -68,6 +83,12 @@ export default function LoginForm() {
         Masukkan email dan password Anda untuk masuk.
       </p>
 
+      {!registrationStatus.is_open && registrationStatus.message ? (
+        <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+          {registrationStatus.message}
+        </div>
+      ) : null}
+
       {successMessage ? (
         <div className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
           {successMessage}
@@ -83,18 +104,18 @@ export default function LoginForm() {
       <div className="mt-6 space-y-4">
         <label className="field">
           <span>Email</span>
-          <input name="email" type="email" placeholder="nama@email.com" required />
+          <input name="email" type="email" placeholder="nama@email.com" required disabled={!registrationStatus.is_open} />
           {fieldErrors.email ? <small className="text-rose-600">{fieldErrors.email}</small> : null}
         </label>
         <label className="field">
           <span>Password</span>
-          <input name="password" type="password" placeholder="Masukkan password" required />
+          <input name="password" type="password" placeholder="Masukkan password" required disabled={!registrationStatus.is_open} />
           {fieldErrors.password ? <small className="text-rose-600">{fieldErrors.password}</small> : null}
         </label>
       </div>
       <div className="mt-4 flex items-center justify-between gap-3 text-sm">
         <label className="flex items-center gap-2 text-slate-500">
-          <input type="checkbox" className="rounded" />
+          <input type="checkbox" className="rounded" disabled={!registrationStatus.is_open} />
           Remember me
         </label>
         <Link href="/forgot-password" className="font-bold text-brand-700">
@@ -103,10 +124,10 @@ export default function LoginForm() {
       </div>
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || !registrationStatus.is_open}
         className="mt-6 w-full justify-center btn-primary disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSubmitting ? "Memproses..." : "Login"}
+        {isSubmitting ? "Memproses..." : registrationStatus.is_open ? "Login" : "Pendaftaran Ditutup"}
       </button>
       <p className="mt-5 text-center text-sm text-slate-500">
         Belum punya akun?{" "}

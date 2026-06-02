@@ -6,9 +6,13 @@ import { Paperclip, Upload, FileImage, FileText, X, CheckCircle2 } from "lucide-
 import PaymentInfo from "@/components/PaymentInfo";
 import { ApiError } from "@/lib/api";
 import { registerParticipant } from "@/lib/auth-api";
-import type { RegisterPayload } from "@/lib/types";
+import type { RegisterPayload, RegistrationStatus } from "@/lib/types";
 
-export default function RegisterForm() {
+interface RegisterFormProps {
+  registrationStatus: RegistrationStatus;
+}
+
+export default function RegisterForm({ registrationStatus }: RegisterFormProps) {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,6 +21,8 @@ export default function RegisterForm() {
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!registrationStatus.is_open) return;
+
     setError("");
     setFieldErrors({});
     setIsSubmitting(true);
@@ -117,6 +123,12 @@ export default function RegisterForm() {
 
   return (
     <form className="panel" onSubmit={handleSubmit}>
+      {!registrationStatus.is_open && registrationStatus.message ? (
+        <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+          {registrationStatus.message}
+        </div>
+      ) : null}
+
       {error ? (
         <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
           {error}
@@ -126,34 +138,34 @@ export default function RegisterForm() {
       <div className="grid gap-5 sm:grid-cols-2">
         <label className="field">
           <span>Nama Lengkap</span>
-          <input name="name" placeholder="Nama sesuai identitas" required />
+          <input name="name" placeholder="Nama sesuai identitas" required disabled={!registrationStatus.is_open} />
           {fieldErrors.name ? <small className="text-rose-600">{fieldErrors.name}</small> : null}
         </label>
         <label className="field">
           <span>Email</span>
-          <input name="email" type="email" placeholder="nama@email.com" required />
+          <input name="email" type="email" placeholder="nama@email.com" required disabled={!registrationStatus.is_open} />
           {fieldErrors.email ? <small className="text-rose-600">{fieldErrors.email}</small> : null}
         </label>
         <label className="field">
           <span>No. WhatsApp</span>
-          <input name="phone" type="tel" placeholder="08xxxxxxxxxx" required minLength={11} maxLength={13} pattern="\d{11,13}" title="Masukkan 11-13 digit angka" />
+          <input name="phone" type="tel" placeholder="08xxxxxxxxxx" required minLength={11} maxLength={13} pattern="\d{11,13}" title="Masukkan 11-13 digit angka" disabled={!registrationStatus.is_open} />
           <small className="text-slate-400">Minimal 11 digit, maksimal 13 digit angka.</small>
           {fieldErrors.phone ? <small className="text-rose-600">{fieldErrors.phone}</small> : null}
         </label>
         <label className="field">
           <span>Institusi</span>
-          <input name="institution" placeholder="Nama instansi" />
+          <input name="institution" placeholder="Nama instansi" disabled={!registrationStatus.is_open} />
           {fieldErrors.institution ? <small className="text-rose-600">{fieldErrors.institution}</small> : null}
         </label>
 
         <label className="field">
           <span>Password</span>
-          <input name="password" type="password" placeholder="Minimal 8 karakter" required minLength={8} />
+          <input name="password" type="password" placeholder="Minimal 8 karakter" required minLength={8} disabled={!registrationStatus.is_open} />
           {fieldErrors.password ? <small className="text-rose-600">{fieldErrors.password}</small> : null}
         </label>
         <label className="field">
           <span>Konfirmasi Password</span>
-          <input name="password_confirmation" type="password" placeholder="Ulangi password" required minLength={8} />
+          <input name="password_confirmation" type="password" placeholder="Ulangi password" required minLength={8} disabled={!registrationStatus.is_open} />
           {fieldErrors.password_confirmation ? <small className="text-rose-600">{fieldErrors.password_confirmation}</small> : null}
         </label>
       </div>
@@ -211,7 +223,7 @@ export default function RegisterForm() {
           </div>
         ) : null}
 
-        <label className="mt-4 block cursor-pointer">
+        <label className={`mt-4 block ${!registrationStatus.is_open ? "cursor-not-allowed opacity-60" : "cursor-pointer"}`}>
           <input
             name="payment_proof"
             type="file"
@@ -219,6 +231,7 @@ export default function RegisterForm() {
             className="hidden"
             required
             onChange={handleFileChange}
+            disabled={!registrationStatus.is_open}
           />
           <div className={`flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition ${
               selectedFile
@@ -240,10 +253,10 @@ export default function RegisterForm() {
         </Link>
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !registrationStatus.is_open}
           className="btn-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isSubmitting ? "Mengirim..." : "Submit Registrasi"}
+          {isSubmitting ? "Mengirim..." : registrationStatus.is_open ? "Submit Registrasi" : "Pendaftaran Ditutup"}
         </button>
       </div>
     </form>

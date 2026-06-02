@@ -17,6 +17,7 @@ import type {
   Question,
   RegisterPayload,
   RegisterResponse,
+  RegistrationStatus,
   StartExamResponse,
   TestApproval,
   ViolationPayload,
@@ -355,6 +356,10 @@ function normalizeExamSettings(rawValue: unknown): ExamSettings {
 
 export function getExamSettings() {
   return api.get<unknown>("/settings/exam").then(normalizeExamSettings);
+}
+
+export function getRegistrationStatus() {
+  return api.get<RegistrationStatus>("/settings/registration", { auth: false });
 }
 
 export function forgotPassword(payload: { email: string }) {
