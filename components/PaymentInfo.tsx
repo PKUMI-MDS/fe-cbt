@@ -28,7 +28,7 @@ export default function PaymentInfo() {
           <Banknote className="mt-0.5 size-4 shrink-0 text-emerald-600" />
           <div>
             <p className="text-xs font-semibold text-slate-500">Biaya Pendaftaran</p>
-            <p className="text-sm font-bold text-slate-900">Rp. 150.000,-</p>
+            <p className="text-sm font-bold text-slate-900">Rp. 150.002,-</p>
           </div>
         </div>
 
