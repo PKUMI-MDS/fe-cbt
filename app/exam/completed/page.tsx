@@ -126,6 +126,11 @@ export default function ExamCompletedPage() {
               <Link href="/dashboard" className="btn-primary">
                 Dashboard
               </Link>
+              {attemptId && showResult ? (
+                <Link href={`/exam/review?attempt_id=${attemptId}`} className="btn-secondary">
+                  Review Soal & Pembahasan
+                </Link>
+              ) : null}
               <Link href="/exam/history" className="btn-secondary">
                 Lihat Riwayat
               </Link>

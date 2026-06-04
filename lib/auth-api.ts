@@ -97,6 +97,7 @@ function normalizeQuestion(rawValue: unknown): Question {
       id: asNumber(option.id),
       option_key: asString(option.option_key, "") || null,
       option_html: asString(option.option_html, ""),
+      is_correct: option.is_correct === undefined ? undefined : Boolean(option.is_correct),
     })),
     selected_option_id:
       raw.selected_option_id === null || raw.selected_option_id === undefined
@@ -105,6 +106,10 @@ function normalizeQuestion(rawValue: unknown): Question {
     is_doubtful: Boolean(raw.is_doubtful),
     section: asString(raw.section ?? snapshot.section, "") || null,
     section_type: asString(raw.section_type ?? snapshot.section_type, "") || null,
+    explanation_html: asString(raw.explanation_html ?? snapshot.explanation_html, "") || null,
+    correct_option_id: raw.correct_option_id === null || raw.correct_option_id === undefined
+      ? null
+      : asNumber(raw.correct_option_id),
   };
 }
 
@@ -333,6 +338,23 @@ export function getAttemptResult(attemptId: number) {
   return api
     .get<unknown>(`/exam-attempts/${attemptId}/result`)
     .then(normalizeResult);
+}
+
+export function getAttemptReview(attemptId: number) {
+  return api.get<unknown>(`/exam-attempts/${attemptId}/review`).then((response) => {
+    const raw = asRecord(response);
+    const questions = Array.isArray(raw.questions)
+      ? raw.questions.map(normalizeQuestion)
+      : [];
+    return {
+      attempt_id: asNumber(raw.attempt_id),
+      session_title: asString(raw.session_title, "") || null,
+      status: asString(raw.status, ""),
+      submitted_at: asString(raw.submitted_at, "") || null,
+      total_questions: asNumber(raw.total_questions, 0),
+      questions,
+    };
+  });
 }
 
 export function getResultHistory() {

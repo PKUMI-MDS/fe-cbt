@@ -153,6 +153,7 @@ export type QuestionOption = {
   option_html?: string | null;
   image_url?: string | null;
   audio_url?: string | null;
+  is_correct?: boolean;
 };
 
 export type Question = {
@@ -170,6 +171,8 @@ export type Question = {
   is_doubtful?: boolean;
   section?: string | null;
   section_type?: string | null;
+  explanation_html?: string | null;
+  correct_option_id?: number | null;
 };
 
 export type StartExamResponse = {
