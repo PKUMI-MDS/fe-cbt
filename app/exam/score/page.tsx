@@ -138,13 +138,8 @@ export default function ScoreDetailPage() {
                 </div>
               ) : null}
 
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href={`/exam/review?attempt_id=${attemptId}`}
-                  className="btn-primary inline-flex items-center justify-center gap-2"
-                >
-                  Lihat Review Soal & Pembahasan
-                </Link>
+              <div className="mt-6 rounded-xl bg-amber-50 p-5 text-sm leading-6 text-amber-800">
+                Review soal dan kunci jawaban tidak ditampilkan untuk menjaga keamanan bank soal.
               </div>
             </div>
           )}

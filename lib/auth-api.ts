@@ -340,23 +340,6 @@ export function getAttemptResult(attemptId: number) {
     .then(normalizeResult);
 }
 
-export function getAttemptReview(attemptId: number) {
-  return api.get<unknown>(`/exam-attempts/${attemptId}/review`).then((response) => {
-    const raw = asRecord(response);
-    const questions = Array.isArray(raw.questions)
-      ? raw.questions.map(normalizeQuestion)
-      : [];
-    return {
-      attempt_id: asNumber(raw.attempt_id),
-      session_title: asString(raw.session_title, "") || null,
-      status: asString(raw.status, ""),
-      submitted_at: asString(raw.submitted_at, "") || null,
-      total_questions: asNumber(raw.total_questions, 0),
-      questions,
-    };
-  });
-}
-
 export function getResultHistory() {
   return api
     .get<unknown>("/my/results")
