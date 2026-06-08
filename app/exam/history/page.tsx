@@ -6,7 +6,7 @@ import { BookOpen } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AuthGuard from "@/components/AuthGuard";
-import { getResultHistory } from "@/lib/auth-api";
+import { getAllMyResults } from "@/lib/auth-api";
 import HistorySkeleton from "@/components/HistorySkeleton";
 
 function formatDate(value?: string | null) {
@@ -17,7 +17,7 @@ function formatDate(value?: string | null) {
 export default function ExamHistoryPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ["history"],
-    queryFn: getResultHistory,
+    queryFn: getAllMyResults,
   });
 
   const results = data?.data ?? [];

@@ -7,7 +7,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import AuthGuard from "@/components/AuthGuard";
 import { ApiError } from "@/lib/api";
-import { getMyExamSessions } from "@/lib/auth-api";
+import { getAllMyExamSessions } from "@/lib/auth-api";
 import type { ExamSession, ExamSessionRegistration } from "@/lib/types";
 
 /**
@@ -69,7 +69,7 @@ export default function ExamDetailPage() {
   useEffect(() => {
     async function loadDetail() {
       try {
-        const res = await getMyExamSessions();
+        const res = await getAllMyExamSessions();
         const regs = res.data ?? [];
         const found = sessionId
           ? regs.find((r) => String(r.exam_session?.id) === sessionId)

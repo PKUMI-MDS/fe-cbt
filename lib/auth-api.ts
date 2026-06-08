@@ -234,8 +234,16 @@ export function getMyTestApprovals() {
   return api.get<PaginatedData<TestApproval>>("/my/test-approvals");
 }
 
-export function getMyExamSessions(page = 1, perPage = 5) {
-  return api.get<PaginatedData<ExamSessionRegistration>>(`/my/exam-sessions?page=${page}&per_page=${perPage}`);
+export function getMyExamSessions(page?: number, perPage?: number) {
+  const params = new URLSearchParams();
+  if (page != null) params.set("page", String(page));
+  if (perPage != null) params.set("per_page", String(perPage));
+  const qs = params.toString();
+  return api.get<PaginatedData<ExamSessionRegistration>>(`/my/exam-sessions${qs ? "?" + qs : ""}`);
+}
+
+export function getAllMyExamSessions() {
+  return getMyExamSessions();
 }
 
 export function getActiveAttempt() {
@@ -256,10 +264,18 @@ export function getActiveAttempt() {
   });
 }
 
-export function getMyResults(page = 1, perPage = 5) {
+export function getMyResults(page?: number, perPage?: number) {
+  const params = new URLSearchParams();
+  if (page != null) params.set("page", String(page));
+  if (perPage != null) params.set("per_page", String(perPage));
+  const qs = params.toString();
   return api
-    .get<unknown>(`/my/results?page=${page}&per_page=${perPage}`)
+    .get<unknown>(`/my/results${qs ? "?" + qs : ""}`)
     .then((response) => normalizePaginated(response, normalizeExamResult));
+}
+
+export function getAllMyResults() {
+  return getMyResults();
 }
 
 export function startExam(sessionId: number) {
@@ -340,9 +356,13 @@ export function getAttemptResult(attemptId: number) {
     .then(normalizeResult);
 }
 
-export function getResultHistory(page = 1, perPage = 10) {
+export function getResultHistory(page?: number, perPage?: number) {
+  const params = new URLSearchParams();
+  if (page != null) params.set("page", String(page));
+  if (perPage != null) params.set("per_page", String(perPage));
+  const qs = params.toString();
   return api
-    .get<unknown>(`/my/results?page=${page}&per_page=${perPage}`)
+    .get<unknown>(`/my/results${qs ? "?" + qs : ""}`)
     .then((response) => normalizePaginated(response, normalizeExamResult));
 }
 

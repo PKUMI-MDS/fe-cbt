@@ -9,7 +9,7 @@ import AuthGuard from "@/components/AuthGuard";
 import DesktopOnlyGuard from "@/components/DesktopOnlyGuard";
 import { ApiError } from "@/lib/api";
 import { getActiveAttempt, startExam } from "@/lib/auth-api";
-import { getMyExamSessions } from "@/lib/auth-api";
+import { getAllMyExamSessions } from "@/lib/auth-api";
 import type { ExamSession } from "@/lib/types";
 
 export default function ExamInstructionPage() {
@@ -29,7 +29,7 @@ export default function ExamInstructionPage() {
   useEffect(() => {
     async function loadSession() {
       try {
-        const res = await getMyExamSessions();
+        const res = await getAllMyExamSessions();
         const regs = res.data ?? [];
         const found = sessionId
           ? regs.find((r) => String(r.exam_session?.id) === sessionId)
