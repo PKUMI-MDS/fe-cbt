@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { UserRound } from "lucide-react";
+import { UserRound, ListFilter } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import Pagination from "@/components/Pagination";
@@ -118,12 +118,13 @@ function statusText(status?: string | null) {
   return status ? labels[status] ?? status : "-";
 }
 
-const SESSIONS_PER_PAGE = 3;
-const RESULTS_PER_PAGE = 5;
+const PER_PAGE_OPTIONS = [3, 5, 10, 20];
 
 export default function DashboardContent() {
   const [sessionsPage, setSessionsPage] = useState(1);
+  const [sessionsPerPage, setSessionsPerPage] = useState(3);
   const [resultsPage, setResultsPage] = useState(1);
+  const [resultsPerPage, setResultsPerPage] = useState(5);
 
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -137,8 +138,8 @@ export default function DashboardContent() {
   });
 
   const { data: sessionsData, isLoading: sessionsLoading } = useQuery({
-    queryKey: ["exam-sessions", sessionsPage],
-    queryFn: () => getMyExamSessions(sessionsPage, SESSIONS_PER_PAGE),
+    queryKey: ["exam-sessions", sessionsPage, sessionsPerPage],
+    queryFn: () => getMyExamSessions(sessionsPage, sessionsPerPage),
     refetchInterval: 30000,
   });
 
@@ -149,8 +150,8 @@ export default function DashboardContent() {
   });
 
   const { data: resultsData, isLoading: resultsLoading } = useQuery({
-    queryKey: ["results", resultsPage],
-    queryFn: () => getMyResults(resultsPage, RESULTS_PER_PAGE),
+    queryKey: ["results", resultsPage, resultsPerPage],
+    queryFn: () => getMyResults(resultsPage, resultsPerPage),
     refetchInterval: 30000,
   });
 
@@ -225,7 +226,27 @@ export default function DashboardContent() {
           ) : null}
 
           <div className="panel animate-fade-in-up">
-            <h2 className="text-lg font-extrabold text-slate-950">Sesi Ujian</h2>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg font-extrabold text-slate-950">Sesi Ujian</h2>
+              <div className="flex items-center gap-2">
+                <ListFilter className="h-3.5 w-3.5 text-slate-400" />
+                <span className="text-xs text-slate-500">Tampilkan</span>
+                <select
+                  value={sessionsPerPage}
+                  onChange={(e) => {
+                    setSessionsPerPage(Number(e.target.value));
+                    setSessionsPage(1);
+                  }}
+                  className="h-7 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none focus:border-brand-400"
+                >
+                  {PER_PAGE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             {visibleRegistrations.length === 0 ? (
               <div className="mt-4 rounded-xl border border-dashed border-slate-200 p-5 text-sm leading-6 text-slate-500">
                 Belum ada sesi ujian yang ditugaskan. Jika sudah membayar, upload bukti pembayaran dan tunggu approval admin.
@@ -301,7 +322,7 @@ export default function DashboardContent() {
                   currentPage={sessionsData.current_page ?? 1}
                   lastPage={sessionsData.last_page ?? 1}
                   total={sessionsData.total ?? 0}
-                  perPage={SESSIONS_PER_PAGE}
+                  perPage={sessionsPerPage}
                   onPageChange={setSessionsPage}
                 />
               </div>
@@ -309,7 +330,27 @@ export default function DashboardContent() {
           </div>
 
           <div className="panel animate-fade-in-up delay-100">
-            <h2 className="text-lg font-extrabold text-slate-950">Riwayat Hasil</h2>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg font-extrabold text-slate-950">Riwayat Hasil</h2>
+              <div className="flex items-center gap-2">
+                <ListFilter className="h-3.5 w-3.5 text-slate-400" />
+                <span className="text-xs text-slate-500">Tampilkan</span>
+                <select
+                  value={resultsPerPage}
+                  onChange={(e) => {
+                    setResultsPerPage(Number(e.target.value));
+                    setResultsPage(1);
+                  }}
+                  className="h-7 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none focus:border-brand-400"
+                >
+                  {PER_PAGE_OPTIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             {resultsData.data.length === 0 ? (
               <p className="mt-4 text-sm leading-6 text-slate-500">Belum ada hasil ujian.</p>
             ) : (
@@ -344,7 +385,7 @@ export default function DashboardContent() {
                   currentPage={resultsData.current_page ?? 1}
                   lastPage={resultsData.last_page ?? 1}
                   total={resultsData.total ?? 0}
-                  perPage={RESULTS_PER_PAGE}
+                  perPage={resultsPerPage}
                   onPageChange={setResultsPage}
                 />
               </div>
