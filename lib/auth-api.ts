@@ -97,6 +97,7 @@ function normalizeQuestion(rawValue: unknown): Question {
       id: asNumber(option.id),
       option_key: asString(option.option_key, "") || null,
       option_html: asString(option.option_html, ""),
+      is_correct: option.is_correct === undefined ? undefined : Boolean(option.is_correct),
     })),
     selected_option_id:
       raw.selected_option_id === null || raw.selected_option_id === undefined
@@ -105,6 +106,10 @@ function normalizeQuestion(rawValue: unknown): Question {
     is_doubtful: Boolean(raw.is_doubtful),
     section: asString(raw.section ?? snapshot.section, "") || null,
     section_type: asString(raw.section_type ?? snapshot.section_type, "") || null,
+    explanation_html: asString(raw.explanation_html ?? snapshot.explanation_html, "") || null,
+    correct_option_id: raw.correct_option_id === null || raw.correct_option_id === undefined
+      ? null
+      : asNumber(raw.correct_option_id),
   };
 }
 
