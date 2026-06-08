@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { UserRound } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
+import Pagination from "@/components/Pagination";
 import {
   getActiveAttempt,
   getMyExamSessions,
@@ -117,68 +118,84 @@ function statusText(status?: string | null) {
   return status ? labels[status] ?? status : "-";
 }
 
-export default function DashboardContent() {
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["dashboard"],
-    queryFn: async () => {
-      const [profile, approvals, registrations, activeAttempt, results] = await Promise.all([
-        getMyProfile(),
-        getMyTestApprovals(),
-        getMyExamSessions(),
-        getActiveAttempt(),
-        getMyResults(),
-      ]);
+const SESSIONS_PER_PAGE = 5;
+const RESULTS_PER_PAGE = 5;
 
-      return {
-        activeAttempt,
-        approvals: approvals.data ?? [],
-        profile,
-        registrations: registrations.data ?? [],
-        results: results.data ?? [],
-      };
-    },
-    refetchInterval: 3000, // Auto-refresh setiap 3 detik
+export default function DashboardContent() {
+  const [sessionsPage, setSessionsPage] = useState(1);
+  const [resultsPage, setResultsPage] = useState(1);
+
+  const { data: profile } = useQuery({
+    queryKey: ["profile"],
+    queryFn: getMyProfile,
   });
 
+  const { data: approvalsData } = useQuery({
+    queryKey: ["test-approvals"],
+    queryFn: getMyTestApprovals,
+    refetchInterval: 30000,
+  });
+
+  const { data: sessionsData, isLoading: sessionsLoading } = useQuery({
+    queryKey: ["exam-sessions", sessionsPage],
+    queryFn: () => getMyExamSessions(sessionsPage, SESSIONS_PER_PAGE),
+    refetchInterval: 30000,
+  });
+
+  const { data: activeAttempt } = useQuery({
+    queryKey: ["active-attempt"],
+    queryFn: getActiveAttempt,
+    refetchInterval: 3000,
+  });
+
+  const { data: resultsData, isLoading: resultsLoading } = useQuery({
+    queryKey: ["results", resultsPage],
+    queryFn: () => getMyResults(resultsPage, RESULTS_PER_PAGE),
+    refetchInterval: 30000,
+  });
+
+  const isLoading = sessionsLoading || resultsLoading;
+
   const activeApprovals = useMemo(
-    () => data?.approvals.filter((approval) => approval.status === "active") ?? [],
-    [data?.approvals]
+    () => approvalsData?.data?.filter((approval) => approval.status === "active") ?? [],
+    [approvalsData]
   );
 
   // Filter: tampilkan hanya sesi dengan status published
   const visibleRegistrations = useMemo(() => {
-    if (!data?.registrations) return [];
+    if (!sessionsData?.data) return [];
 
-    return data.registrations.filter((registration) => {
+    return sessionsData.data.filter((registration) => {
       const session = registration.exam_session;
       if (!session) return false;
 
       return (session.status?.toLowerCase() ?? "") === "published";
     });
-  }, [data?.registrations]);
+  }, [sessionsData]);
 
   if (isLoading) {
     return <DashboardSkeleton />;
   }
 
-  if (error) {
+  const anyError =
+    !profile || !sessionsData || !resultsData;
+
+  if (anyError) {
     return (
       <div className="mt-8 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-        {error instanceof Error ? error.message : "Gagal memuat dashboard."}
+        Gagal memuat dashboard.
       </div>
     );
   }
-
-  if (!data) return null;
 
   return (
     <>
       <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
         <div>
           <p className="eyebrow">Dashboard Peserta</p>
-          <h1 className="page-title">Halo, {data.profile?.name ?? "Peserta"}</h1>
+          <h1 className="page-title">Halo, {profile?.name ?? "Peserta"}</h1>
           <p className="page-desc">
-            Status akun kamu {statusText(data.profile?.account_status).toLowerCase()}.
+            Status akun kamu {statusText(profile?.account_status).toLowerCase()}.
             Cek sesi ujian, approval, dan riwayat hasil ujian.
           </p>
         </div>
@@ -190,14 +207,14 @@ export default function DashboardContent() {
 
       <div className="mt-8 grid gap-5 lg:grid-cols-[1fr_360px]">
         <div className="space-y-5">
-          {data.activeAttempt ? (
+          {activeAttempt ? (
             <div className="panel border border-emerald-200 bg-emerald-50/50">
               <span className="badge-success">Sedang Berjalan</span>
               <h2 className="mt-4 text-2xl font-extrabold text-slate-950">
-                {data.activeAttempt.session.title}
+                {activeAttempt.session.title}
               </h2>
               <p className="mt-2 text-sm text-slate-600">
-                Lanjutkan dari soal nomor {data.activeAttempt.attempt.current_question_number ?? 1}.
+                Lanjutkan dari soal nomor {activeAttempt.attempt.current_question_number ?? 1}.
               </p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link href="/exam" className="btn-primary">
@@ -280,13 +297,20 @@ export default function DashboardContent() {
                     </div>
                   );
                 })}
+                <Pagination
+                  currentPage={sessionsData.current_page ?? 1}
+                  lastPage={sessionsData.last_page ?? 1}
+                  total={sessionsData.total ?? 0}
+                  perPage={SESSIONS_PER_PAGE}
+                  onPageChange={setSessionsPage}
+                />
               </div>
             )}
           </div>
 
           <div className="panel animate-fade-in-up delay-100">
             <h2 className="text-lg font-extrabold text-slate-950">Riwayat Hasil</h2>
-            {data.results.length === 0 ? (
+            {resultsData.data.length === 0 ? (
               <p className="mt-4 text-sm leading-6 text-slate-500">Belum ada hasil ujian.</p>
             ) : (
               <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
@@ -300,7 +324,7 @@ export default function DashboardContent() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.results.map((result) => (
+                    {resultsData.data.map((result) => (
                       <tr key={result.id}>
                         <td className="px-4 py-4 font-semibold">{result.exam_session?.title ?? "Ujian"}</td>
                         <td className="px-4 py-4">{formatDateTime(result.created_at)}</td>
@@ -316,6 +340,13 @@ export default function DashboardContent() {
                     ))}
                   </tbody>
                 </table>
+                <Pagination
+                  currentPage={resultsData.current_page ?? 1}
+                  lastPage={resultsData.last_page ?? 1}
+                  total={resultsData.total ?? 0}
+                  perPage={RESULTS_PER_PAGE}
+                  onPageChange={setResultsPage}
+                />
               </div>
             )}
           </div>
@@ -326,8 +357,8 @@ export default function DashboardContent() {
             <h3 className="text-lg font-extrabold">Approval Ujian</h3>
             <div className="mt-5 space-y-3 text-sm text-slate-300">
               <p>Approval aktif: {activeApprovals.length}</p>
-              <p>Total approval: {data.approvals.length}</p>
-              <p>Status akun: {statusText(data.profile?.account_status)}</p>
+              <p>Total approval: {approvalsData?.data?.length ?? 0}</p>
+              <p>Status akun: {statusText(profile?.account_status)}</p>
             </div>
           </div>
           <div className="panel animate-fade-in-up delay-300">

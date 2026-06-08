@@ -229,8 +229,8 @@ export function getMyTestApprovals() {
   return api.get<PaginatedData<TestApproval>>("/my/test-approvals");
 }
 
-export function getMyExamSessions() {
-  return api.get<PaginatedData<ExamSessionRegistration>>("/my/exam-sessions");
+export function getMyExamSessions(page = 1, perPage = 5) {
+  return api.get<PaginatedData<ExamSessionRegistration>>(`/my/exam-sessions?page=${page}&per_page=${perPage}`);
 }
 
 export function getActiveAttempt() {
@@ -251,9 +251,9 @@ export function getActiveAttempt() {
   });
 }
 
-export function getMyResults() {
+export function getMyResults(page = 1, perPage = 5) {
   return api
-    .get<unknown>("/my/results")
+    .get<unknown>(`/my/results?page=${page}&per_page=${perPage}`)
     .then((response) => normalizePaginated(response, normalizeExamResult));
 }
 
@@ -335,9 +335,9 @@ export function getAttemptResult(attemptId: number) {
     .then(normalizeResult);
 }
 
-export function getResultHistory() {
+export function getResultHistory(page = 1, perPage = 10) {
   return api
-    .get<unknown>("/my/results")
+    .get<unknown>(`/my/results?page=${page}&per_page=${perPage}`)
     .then((response) => normalizePaginated(response, normalizeExamResult));
 }
 
