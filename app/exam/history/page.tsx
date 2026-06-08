@@ -34,8 +34,30 @@ export default function ExamHistoryPage() {
       <Header />
       <main id="main">
         <section className="page-wrap max-w-6xl">
-          <h1 className="page-title">Riwayat Ujian</h1>
-          <p className="page-desc">Daftar ujian yang pernah kamu ikuti.</p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="page-title">Riwayat Ujian</h1>
+              <p className="page-desc">Daftar ujian yang pernah kamu ikuti.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <ListFilter className="h-3.5 w-3.5 text-slate-400" />
+              <span className="text-xs text-slate-500">Tampilkan</span>
+              <select
+                value={perPage}
+                onChange={(e) => {
+                  setPerPage(Number(e.target.value));
+                  setPage(1);
+                }}
+                className="h-7 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none focus:border-brand-400"
+              >
+                {PER_PAGE_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {isLoading ? (
             <HistorySkeleton />
@@ -100,25 +122,7 @@ export default function ExamHistoryPage() {
                   </tbody>
                 </table>
               </div>
-              <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2">
-                  <ListFilter className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="text-xs text-slate-500">Tampilkan</span>
-                  <select
-                    value={perPage}
-                    onChange={(e) => {
-                      setPerPage(Number(e.target.value));
-                      setPage(1);
-                    }}
-                    className="h-7 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none focus:border-brand-400"
-                  >
-                    {PER_PAGE_OPTIONS.map((n) => (
-                      <option key={n} value={n}>
-                        {n}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div className="mt-4">
                 <Pagination
                   currentPage={data?.current_page ?? 1}
                   lastPage={data?.last_page ?? 1}
