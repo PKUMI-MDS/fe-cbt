@@ -354,41 +354,45 @@ export default function DashboardContent() {
             {resultsData.data.length === 0 ? (
               <p className="mt-4 text-sm leading-6 text-slate-500">Belum ada hasil ujian.</p>
             ) : (
-              <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
-                <table className="min-w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-400">
-                    <tr>
-                      <th className="px-4 py-3">Ujian</th>
-                      <th className="px-4 py-3">Tanggal</th>
-                      <th className="px-4 py-3">Status</th>
-                      <th className="px-4 py-3">Skor</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resultsData.data.map((result) => (
-                      <tr key={result.id}>
-                        <td className="px-4 py-4 font-semibold">{result.exam_session?.title ?? "Ujian"}</td>
-                        <td className="px-4 py-4">{formatDateTime(result.created_at)}</td>
-                        <td className="px-4 py-4 font-bold text-emerald-700">
-                          {result.published_at ? "Dipublikasi" : "Menunggu"}
-                        </td>
-                        <td className="px-4 py-4 font-bold">
-                          {result.published_at && (result.show_result_to_user ?? result.exam_session?.show_result_to_user)
-                            ? (result.total_score ?? "-")
-                            : "-"}
-                        </td>
+              <>
+                <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="min-w-full text-left text-sm">
+                    <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-400">
+                      <tr>
+                        <th className="px-4 py-3">Ujian</th>
+                        <th className="px-4 py-3">Tanggal</th>
+                        <th className="px-4 py-3">Status</th>
+                        <th className="px-4 py-3">Skor</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <Pagination
-                  currentPage={resultsData.current_page ?? 1}
-                  lastPage={resultsData.last_page ?? 1}
-                  total={resultsData.total ?? 0}
-                  perPage={resultsPerPage}
-                  onPageChange={setResultsPage}
-                />
-              </div>
+                    </thead>
+                    <tbody>
+                      {resultsData.data.map((result) => (
+                        <tr key={result.id}>
+                          <td className="px-4 py-4 font-semibold">{result.exam_session?.title ?? "Ujian"}</td>
+                          <td className="px-4 py-4">{formatDateTime(result.created_at)}</td>
+                          <td className="px-4 py-4 font-bold text-emerald-700">
+                            {result.published_at ? "Dipublikasi" : "Menunggu"}
+                          </td>
+                          <td className="px-4 py-4 font-bold">
+                            {result.published_at && (result.show_result_to_user ?? result.exam_session?.show_result_to_user)
+                              ? (result.total_score ?? "-")
+                              : "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="mt-4">
+                  <Pagination
+                    currentPage={resultsData.current_page ?? 1}
+                    lastPage={resultsData.last_page ?? 1}
+                    total={resultsData.total ?? 0}
+                    perPage={resultsPerPage}
+                    onPageChange={setResultsPage}
+                  />
+                </div>
+              </>
             )}
           </div>
         </div>
