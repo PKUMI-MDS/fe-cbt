@@ -118,7 +118,7 @@ function statusText(status?: string | null) {
   return status ? labels[status] ?? status : "-";
 }
 
-const SESSIONS_PER_PAGE = 5;
+const SESSIONS_PER_PAGE = 3;
 const RESULTS_PER_PAGE = 5;
 
 export default function DashboardContent() {
