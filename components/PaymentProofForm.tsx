@@ -102,7 +102,7 @@ export default function PaymentProofForm() {
   }, [proofsPage, proofsPerPage]);
 
   // Auto-polling: cek status setiap 5 detik
-  // Jika ada yang berubah ke approved → redirect ke dashboard
+  // Jika ada yang berubah ke approved → update data tanpa redirect
   useEffect(() => {
     const hasPending = proofs.some((p) => p.status === "pending_review");
     if (!hasPending || isLoadingHistory) return;
@@ -112,22 +112,10 @@ export default function PaymentProofForm() {
         const response = await getAllPaymentProofs();
         const latest = response.data ?? [];
         setProofs(latest);
-
-        // Cek apakah ada yang baru approved
-        const newlyApproved = latest.some(
-          (item) =>
-            item.status === "approved" &&
-            proofs.find((old) => old.id === item.id)?.status !== "approved"
-        );
-
-        if (newlyApproved) {
-          clearInterval(interval);
-          window.location.href = "/dashboard";
-        }
       } catch {
         // silent fail
       }
-    }, 2000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [proofs, isLoadingHistory]);
