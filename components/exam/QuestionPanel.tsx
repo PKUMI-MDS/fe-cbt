@@ -46,6 +46,14 @@ export default function QuestionPanel({
           </span>
         </div>
 
+        {/* Stimulus (passage, transcript, etc.) */}
+        {currentQ.stimulus_html ? (
+          <div
+            className="prose max-w-none rounded-xl border border-slate-200 bg-slate-50 p-4 text-slate-800"
+            dangerouslySetInnerHTML={{ __html: currentQ.stimulus_html }}
+          />
+        ) : null}
+
         {/* Stem */}
         <div
           className="prose max-w-none text-slate-950"

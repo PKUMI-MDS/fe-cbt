@@ -171,7 +171,7 @@ export type Question = {
   is_doubtful?: boolean;
   section?: string | null;
   section_type?: string | null;
-  explanation_html?: string | null;
+  stimulus_html?: string | null;
   correct_option_id?: number | null;
 };
 

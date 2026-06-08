@@ -106,7 +106,7 @@ function normalizeQuestion(rawValue: unknown): Question {
     is_doubtful: Boolean(raw.is_doubtful),
     section: asString(raw.section ?? snapshot.section, "") || null,
     section_type: asString(raw.section_type ?? snapshot.section_type, "") || null,
-    explanation_html: asString(raw.explanation_html ?? snapshot.explanation_html, "") || null,
+    stimulus_html: asString(raw.stimulus_html ?? snapshot.stimulus_html, "") || null,
     correct_option_id: raw.correct_option_id === null || raw.correct_option_id === undefined
       ? null
       : asNumber(raw.correct_option_id),
