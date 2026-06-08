@@ -13,7 +13,7 @@ export default function Toast({ message, onHide }: ToastProps) {
   useEffect(() => {
     if (message) {
       if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => onHide(), 2400);
+      timerRef.current = setTimeout(() => onHide(), 7000);
     }
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);

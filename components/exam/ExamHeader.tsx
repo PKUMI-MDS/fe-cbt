@@ -53,14 +53,7 @@ export default function ExamHeader({
           >
             {remainingTime}
           </span>
-          <button
-            type="button"
-            aria-label="Selesai Ujian"
-            onClick={onOpenSubmit}
-            className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-400"
-          >
-            Selesai
-          </button>
+
         </div>
       </div>
     </div>

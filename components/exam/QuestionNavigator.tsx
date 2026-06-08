@@ -6,6 +6,7 @@ interface QuestionNavigatorProps {
   answeredMap: Record<number, number | null>;
   doubtfulSet: Set<number>;
   onNavigate: (n: number) => void;
+  onOpenSubmit?: () => void;
 }
 
 export default function QuestionNavigator({
@@ -14,6 +15,7 @@ export default function QuestionNavigator({
   answeredMap,
   doubtfulSet,
   onNavigate,
+  onOpenSubmit,
 }: QuestionNavigatorProps) {
   return (
     <aside className="lg:sticky lg:top-24 lg:h-fit animate-fade-in-up delay-100">
@@ -47,6 +49,16 @@ export default function QuestionNavigator({
           <p><span className="mr-1 inline-block h-3 w-3 rounded bg-amber-400" />Ragu-ragu</p>
           <p><span className="mr-1 inline-block h-3 w-3 rounded bg-slate-200" />Belum</p>
         </div>
+
+        {onOpenSubmit && (
+          <button
+            type="button"
+            onClick={onOpenSubmit}
+            className="mt-5 w-full rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-400"
+          >
+            Selesai Ujian
+          </button>
+        )}
       </div>
     </aside>
   );

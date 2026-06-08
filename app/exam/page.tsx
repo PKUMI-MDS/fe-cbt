@@ -713,6 +713,7 @@ export default function ExamPage() {
             answeredMap={answeredMap}
             doubtfulSet={doubtfulSet}
             onNavigate={(n) => void goToQuestion(n)}
+            onOpenSubmit={() => setShowModal(true)}
           />
         </div>
       </section>
