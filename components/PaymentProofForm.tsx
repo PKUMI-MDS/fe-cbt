@@ -3,17 +3,19 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ApiError } from "@/lib/api";
-import { getPaymentProofs, uploadPaymentProof } from "@/lib/auth-api";
+import { getPaymentProofs, getAllPaymentProofs, uploadPaymentProof } from "@/lib/auth-api";
 import type { PaymentProof } from "@/lib/types";
 import {
   AlertTriangle,
   CheckCircle,
   Clock,
   FileText,
+  ListFilter,
   Upload,
   XCircle,
 } from "lucide-react";
 import PaymentInfo from "@/components/PaymentInfo";
+import Pagination from "@/components/Pagination";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "application/pdf"];
@@ -62,18 +64,28 @@ function statusConfig(status: string) {
   }
 }
 
+const PER_PAGE_OPTIONS = [3, 5, 10, 20];
+
 export default function PaymentProofForm() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [proofs, setProofs] = useState<PaymentProof[]>([]);
+  const [proofsPage, setProofsPage] = useState(1);
+  const [proofsPerPage, setProofsPerPage] = useState(5);
+  const [proofsMeta, setProofsMeta] = useState({ current_page: 1, last_page: 1, total: 0 });
 
-  async function loadHistory() {
+  async function loadHistory(page = proofsPage, perPage = proofsPerPage) {
     setIsLoadingHistory(true);
     try {
-      const response = await getPaymentProofs();
+      const response = await getPaymentProofs(page, perPage);
       setProofs(response.data ?? []);
+      setProofsMeta({
+        current_page: response.current_page ?? 1,
+        last_page: response.last_page ?? 1,
+        total: response.total ?? 0,
+      });
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -86,8 +98,8 @@ export default function PaymentProofForm() {
   }
 
   useEffect(() => {
-    void loadHistory();
-  }, []);
+    void loadHistory(proofsPage, proofsPerPage);
+  }, [proofsPage, proofsPerPage]);
 
   // Auto-polling: cek status setiap 5 detik
   // Jika ada yang berubah ke approved → redirect ke dashboard
@@ -97,7 +109,7 @@ export default function PaymentProofForm() {
 
     const interval = setInterval(async () => {
       try {
-        const response = await getPaymentProofs();
+        const response = await getAllPaymentProofs();
         const latest = response.data ?? [];
         setProofs(latest);
 
@@ -154,7 +166,8 @@ export default function PaymentProofForm() {
       });
       form.reset();
       setSuccess("Bukti pembayaran berhasil dikirim dan menunggu review admin.");
-      await loadHistory();
+      setProofsPage(1);
+      await loadHistory(1, proofsPerPage);
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -259,9 +272,29 @@ export default function PaymentProofForm() {
 
       {/* History */}
       <section className="panel">
-        <h2 className="text-lg font-extrabold text-slate-950">
-          Riwayat Bukti Pembayaran
-        </h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-extrabold text-slate-950">
+            Riwayat Bukti Pembayaran
+          </h2>
+          <div className="flex items-center gap-2">
+            <ListFilter className="h-3.5 w-3.5 text-slate-400" />
+            <span className="text-xs text-slate-500">Tampilkan</span>
+            <select
+              value={proofsPerPage}
+              onChange={(e) => {
+                setProofsPerPage(Number(e.target.value));
+                setProofsPage(1);
+              }}
+              className="h-7 rounded-md border border-slate-200 bg-white px-2 text-xs font-semibold text-slate-700 outline-none focus:border-brand-400"
+            >
+              {PER_PAGE_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         {isLoadingHistory ? (
           <p className="mt-4 text-sm font-semibold text-slate-500">
             Memuat riwayat...
@@ -338,6 +371,17 @@ export default function PaymentProofForm() {
                 </Link>
               );
             })}
+          </div>
+        )}
+        {proofsMeta.last_page > 1 && (
+          <div className="mt-4">
+            <Pagination
+              currentPage={proofsMeta.current_page}
+              lastPage={proofsMeta.last_page}
+              total={proofsMeta.total}
+              perPage={proofsPerPage}
+              onPageChange={setProofsPage}
+            />
           </div>
         )}
       </section>

@@ -218,8 +218,16 @@ export function uploadPaymentProof(payload: PaymentProofPayload) {
   return api.post<PaymentProof>("/payment-proofs", formData);
 }
 
-export function getPaymentProofs() {
-  return api.get<PaginatedData<PaymentProof>>("/payment-proofs");
+export function getPaymentProofs(page?: number, perPage?: number) {
+  const params = new URLSearchParams();
+  if (page != null) params.set("page", String(page));
+  if (perPage != null) params.set("per_page", String(perPage));
+  const qs = params.toString();
+  return api.get<PaginatedData<PaymentProof>>(`/payment-proofs${qs ? "?" + qs : ""}`);
+}
+
+export function getAllPaymentProofs() {
+  return getPaymentProofs();
 }
 
 export function getPaymentProof(id: number | string) {
