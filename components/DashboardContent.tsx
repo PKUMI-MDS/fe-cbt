@@ -158,7 +158,7 @@ export default function DashboardContent() {
   const isLoading = sessionsLoading || resultsLoading;
 
   const activeApprovals = useMemo(
-    () => approvalsData?.data?.filter((approval) => approval.status === "active") ?? [],
+    () => approvalsData?.data?.filter((approval) => approval.status === "available") ?? [],
     [approvalsData]
   );
 
