@@ -97,6 +97,8 @@ export default function ExamPage() {
   const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
 
+  const handleHideToast = useCallback(() => setToast(""), []);
+
   // ─── Handler terpusat: attempt tidak valid ────────────────────────────────
   const handleAttemptInvalid = useCallback((err: unknown) => {
     // Stop semua interval
@@ -623,6 +625,7 @@ export default function ExamPage() {
   if (isLoading) {
     return (
       <AuthGuard>
+        <Toast message={toast} onHide={handleHideToast} />
         <ExamSkeleton />
       </AuthGuard>
     );
@@ -646,7 +649,7 @@ export default function ExamPage() {
   if (!isFullScreen) {
     return (
       <AuthGuard>
-        <Toast message={toast} onHide={() => setToast("")} />
+        <Toast message={toast} onHide={handleHideToast} />
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-900 px-4 text-center">
           <div className="max-w-md rounded-2xl bg-white p-8 shadow-2xl">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-50">
@@ -673,7 +676,7 @@ export default function ExamPage() {
   return (
     <AuthGuard>
       <DesktopOnlyGuard>
-      <Toast message={toast} onHide={() => setToast("")} />
+      <Toast message={toast} onHide={handleHideToast} />
 
       <section className="min-h-screen bg-slate-100">
         {/* Sticky Header */}
